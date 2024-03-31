@@ -15,7 +15,7 @@ BIN_PATH    ?= /usr/local/bin
 
 SOURCES := $(shell find $(SOURCE_DIR) -type f -name '*.c')
 OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(OBJECTS_DIR)/%.o, $(SOURCES))
-BINARY  := $(BUILD_DIR)/exe
+BINARY  := $(BUILD_DIR)/sagit
 
 OBJECTS      := $(patsubst $(SOURCE_DIR)/%.c, $(OBJECTS_DIR)/%.o, $(SOURCES))
 DEPENDENCIES := $(patsubst %.o, %.d, $(OBJECTS))
