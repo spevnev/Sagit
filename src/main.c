@@ -11,8 +11,8 @@ int main(int argc, char **argv) {
 
     if (!is_git_initialized()) ERROR("Git is not initialized in the current directory.\n");
 
-    // GitState git;
-    // if (get_git_state(&git)) ERROR("Unable to get git state.\n");
+    GitState git = {0};
+    if (get_git_state(&git)) ERROR("Unable to get git state.\n");
 
     // TODO: print git state
 
