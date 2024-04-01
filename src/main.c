@@ -114,14 +114,10 @@ int main(int argc, char **argv) {
 
     free(git.untracked.raw);
     VECTOR_FREE(&git.untracked.files);
-
     free(git.unstaged.raw);
-    for (size_t i = 0; i < git.unstaged.files.length; i++) VECTOR_FREE(&git.unstaged.files.data[i].hunks);
-    VECTOR_FREE(&git.unstaged.files);
-
+    free_files(&git.unstaged.files);
     free(git.staged.raw);
-    for (size_t i = 0; i < git.staged.files.length; i++) VECTOR_FREE(&git.staged.files.data[i].hunks);
-    VECTOR_FREE(&git.staged.files);
+    free_files(&git.staged.files);
 
     return EXIT_SUCCESS;
 }

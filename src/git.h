@@ -30,5 +30,6 @@ typedef struct {
 
 int is_git_initialized();
 int get_git_state(GitState *git);
+void free_files(FileVec *vec);
 
 #endif  // GIT_H
