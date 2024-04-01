@@ -87,6 +87,14 @@ static str_vec split(char *text, char delimiter) {
     return lines;
 }
 
+static FileVec parse_diff(char *diff) {
+    FileVec files = {0};
+
+    // TODO:
+
+    return files;
+}
+
 int is_git_initialized(void) {
     int status;
     char *output = git_exec(&status, CMD("git", "status"));
@@ -99,7 +107,11 @@ int get_git_state(GitState *git) {
     git->untracked.raw = git_exec(NULL, CMD("git", "ls-files", "--others", "--exclude-standard"));
     git->untracked.files = split(git->untracked.raw, '\n');
 
-    //
+    git->unstaged.raw = git_exec(NULL, CMD("git", "diff"));
+    git->unstaged.files = parse_diff(git->unstaged.raw);
+
+    git->staged.raw = git_exec(NULL, CMD("git", "diff", "--staged"));
+    git->staged.files = parse_diff(git->staged.raw);
 
     return 0;
 }

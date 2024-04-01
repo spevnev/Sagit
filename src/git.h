@@ -4,19 +4,26 @@
 #include "vector.h"
 
 typedef struct {
-    char *from;
-    char *to;
+    char *src;
+    char *dest;
     char **hunks;
 } File;
+
+DEFINE_VECTOR_TYPE(FileVec, File);
 
 typedef struct {
     struct {
         char *raw;
         str_vec files;
     } untracked;
-
-    File *unstaged;
-    File *staged;
+    struct {
+        char *raw;
+        FileVec files;
+    } unstaged;
+    struct {
+        char *raw;
+        FileVec files;
+    } staged;
 } GitState;
 
 int is_git_initialized(void);
