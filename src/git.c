@@ -9,8 +9,6 @@
 #include "error.h"
 #include "vector.h"
 
-DEFINE_VECTOR_TYPE(str_vec, char *);
-
 #define INITIAL_BUFFER_SIZE 1024
 
 #define NO_GIT_BINARY 100
@@ -98,12 +96,10 @@ int is_git_initialized(void) {
 }
 
 int get_git_state(GitState *git) {
-    char *untracked_raw = git_exec(NULL, CMD("git", "ls-files", "--others", "--exclude-standard"));
-    str_vec untracked_files = split(untracked_raw, '\n');
-    // TODO: store output in lines? struct Lines?
+    git->untracked.raw = git_exec(NULL, CMD("git", "ls-files", "--others", "--exclude-standard"));
+    git->untracked.files = split(git->untracked.raw, '\n');
 
     //
 
-    free(untracked_raw);
-    free(untracked_files.data);
+    return 0;
 }

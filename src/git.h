@@ -1,6 +1,8 @@
 #ifndef GIT_H
 #define GIT_H
 
+#include "vector.h"
+
 typedef struct {
     char *from;
     char *to;
@@ -8,7 +10,11 @@ typedef struct {
 } File;
 
 typedef struct {
-    char **untracked;
+    struct {
+        char *raw;
+        str_vec files;
+    } untracked;
+
     File *unstaged;
     File *staged;
 } GitState;

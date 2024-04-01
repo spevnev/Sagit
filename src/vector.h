@@ -10,7 +10,7 @@
         size_t capacity;               \
         size_t length;                 \
         type *data;                    \
-    } name;
+    } name
 
 #define VECTOR_PUSH(vec, element)                                                  \
     do {                                                                           \
@@ -24,6 +24,10 @@
             if ((vec)->data == NULL) ERROR("Process is out of memory.");           \
         }                                                                          \
         (vec)->data[(vec)->length++] = element;                                    \
-    } while (0);
+    } while (0)
+
+#define VECTOR_FREE(vec) free((vec)->data)
+
+DEFINE_VECTOR_TYPE(str_vec, char *);
 
 #endif  // VECTOR_H

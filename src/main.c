@@ -16,5 +16,8 @@ int main(int argc, char **argv) {
 
     // TODO: print git state
 
+    free(git.untracked.raw);
+    VECTOR_FREE(&git.untracked.files);
+
     return EXIT_SUCCESS;
 }
