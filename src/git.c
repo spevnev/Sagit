@@ -88,14 +88,43 @@ static str_vec split(char *text, char delimiter) {
 }
 
 static FileVec parse_diff(char *diff) {
+    str_vec lines = split(diff, '\n');
     FileVec files = {0};
 
-    // TODO:
+    size_t i = 0;
+    while (i < lines.length) {
+        assert(strncmp(lines.data[i], "diff --git", 10) == 0 && i + 3 < lines.length);  // file header
 
+        // skip diff and index lines
+        i += 2;
+
+        File file = {0};
+        file.src = lines.data[i++] + 4;
+        file.dest = lines.data[i++] + 4;
+
+        while (i < lines.length) {
+            if (lines.data[i][0] == 'd') break;
+            assert(lines.data[i][0] == '@');  // hunk header
+
+            str_vec hunk = {0};
+            VECTOR_PUSH(&hunk, lines.data[i++]);
+
+            while (i < lines.length) {
+                if (lines.data[i][0] == '@' || lines.data[i][0] == 'd') break;
+                VECTOR_PUSH(&hunk, lines.data[i++]);
+            }
+
+            VECTOR_PUSH(&file.hunks, hunk);
+        }
+
+        VECTOR_PUSH(&files, file);
+    }
+
+    VECTOR_FREE(&lines);
     return files;
 }
 
-int is_git_initialized(void) {
+int is_git_initialized() {
     int status;
     char *output = git_exec(&status, CMD("git", "status"));
     free(output);

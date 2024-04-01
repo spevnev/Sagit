@@ -3,10 +3,12 @@
 
 #include "vector.h"
 
+DEFINE_VECTOR_TYPE(str_vec_vec, str_vec);
+
 typedef struct {
     char *src;
     char *dest;
-    char **hunks;
+    str_vec_vec hunks;
 } File;
 
 DEFINE_VECTOR_TYPE(FileVec, File);
@@ -26,7 +28,7 @@ typedef struct {
     } staged;
 } GitState;
 
-int is_git_initialized(void);
+int is_git_initialized();
 int get_git_state(GitState *git);
 
 #endif  // GIT_H
