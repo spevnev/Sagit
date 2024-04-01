@@ -7,7 +7,7 @@
 #include <string.h>
 
 #ifdef DEBUG
-#    define _ERROR() fprintf(stderr, "errno = \"%s\".\n", strerror(errno));
+#    define _ERROR() fprintf(stderr, "errno = \"%s\".\n", strerror(errno))
 #else
 #    define _ERROR()
 #endif
@@ -19,6 +19,6 @@
         _ERROR();                                              \
         fflush(stderr);                                        \
         exit(1);                                               \
-    } while (0);
+    } while (0)
 
 #endif  // ERROR_H

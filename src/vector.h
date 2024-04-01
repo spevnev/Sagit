@@ -12,18 +12,24 @@
         type *data;                    \
     } name
 
-#define VECTOR_PUSH(vec, element)                                                  \
-    do {                                                                           \
-        if ((vec)->capacity == 0) {                                                \
-            (vec)->capacity = INITIAL_VECTOR_CAPACITY;                             \
-            (vec)->data = malloc((vec)->capacity * sizeof(element));               \
-            if ((vec)->data == NULL) ERROR("Process is out of memory.");           \
-        } else if ((vec)->length == (vec)->capacity) {                             \
-            (vec)->capacity *= 2;                                                  \
-            (vec)->data = realloc((vec)->data, (vec)->capacity * sizeof(element)); \
-            if ((vec)->data == NULL) ERROR("Process is out of memory.");           \
-        }                                                                          \
-        (vec)->data[(vec)->length++] = element;                                    \
+#define VECTOR_PUSH(vec, element)                                                    \
+    do {                                                                             \
+        if ((vec)->capacity == 0) {                                                  \
+            (vec)->capacity = INITIAL_VECTOR_CAPACITY;                               \
+            (vec)->data = malloc((vec)->capacity * sizeof((element)));               \
+            if ((vec)->data == NULL) ERROR("Process is out of memory.\n");           \
+        } else if ((vec)->length == (vec)->capacity) {                               \
+            (vec)->capacity *= 2;                                                    \
+            (vec)->data = realloc((vec)->data, (vec)->capacity * sizeof((element))); \
+            if ((vec)->data == NULL) ERROR("Process is out of memory.\n");           \
+        }                                                                            \
+        (vec)->data[(vec)->length++] = (element);                                    \
+    } while (0)
+
+#define VECTOR_POP(vec)            \
+    do {                           \
+        assert((vec)->length > 0); \
+        (vec)->length--;           \
     } while (0)
 
 #define VECTOR_FREE(vec) free((vec)->data)
