@@ -7,6 +7,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include "error.h"
+#include "state.h"
 #include "vector.h"
 
 #define INITIAL_BUFFER_SIZE 1024
@@ -144,14 +145,4 @@ int get_git_state(State *state) {
     state->staged.files = parse_diff(state->staged.raw);
 
     return 0;
-}
-
-void free_files(FileVec *vec) {
-    for (size_t i = 0; i < vec->length; i++) {
-        for (size_t j = 0; j < vec->data[i].hunks.length; j++) {
-            VECTOR_FREE(&vec->data[i].hunks.data[j].lines);
-        }
-        VECTOR_FREE(&vec->data[i].hunks);
-    }
-    VECTOR_FREE(vec);
 }
