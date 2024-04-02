@@ -35,5 +35,6 @@
 #define VECTOR_FREE(vec) free((vec)->data)
 
 DEFINE_VECTOR_TYPE(str_vec, char *);
+DEFINE_VECTOR_TYPE(void_vec, void *);
 
 #endif  // VECTOR_H

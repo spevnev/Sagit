@@ -1,12 +1,16 @@
+#define _XOPEN_SOURCE 700
 #include <assert.h>
 #include <locale.h>
 #include <ncurses.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "error.h"
 #include "git.h"
 
-void render(GitState git) {
+static char running = 1;
+static GitState git = {0};
+static void render() {
     if (git.untracked.files.length > 0) {
         printw("Unstaged files:\n");
 
@@ -68,6 +72,24 @@ void render(GitState git) {
     }
 }
 
+static void cleanup() {
+    endwin();
+
+    free(git.untracked.raw);
+    VECTOR_FREE(&git.untracked.files);
+    free(git.unstaged.raw);
+    free_files(&git.unstaged.files);
+    free(git.staged.raw);
+    free_files(&git.staged.files);
+
+    for (size_t i = 0; i < lines.length; i++) free(lines.data[i]);
+}
+
+static void stop_running(int signal) {
+    (void) signal;
+    running = 0;
+}
+
 int main(int argc, char **argv) {
     if (argc > 1) {
         fprintf(stderr, "usage: %s\n", argv[0]);
@@ -75,9 +97,8 @@ int main(int argc, char **argv) {
     }
 
     if (!is_git_initialized()) ERROR("Git is not initialized in the current directory.\n");
-
-    GitState git = {0};
     if (get_git_state(&git)) ERROR("Unable to get git state.\n");
+    render(&git);
 
     setlocale(LC_ALL, "");
     initscr();
@@ -85,10 +106,13 @@ int main(int argc, char **argv) {
     noecho();
     start_color();
 
-    render(git);  // TODO: pointer
-    move(0, 0);
+    atexit(cleanup);
 
-    char running = 1;
+    struct sigaction action = {0};
+    action.sa_handler = stop_running;
+    sigaction(SIGINT, &action, NULL);
+
+
     while (running) {
         switch (getch()) {
             case 'q':
@@ -106,18 +130,7 @@ int main(int argc, char **argv) {
             default:
                 break;
         }
-
-        refresh();
     }
-
-    endwin();
-
-    free(git.untracked.raw);
-    VECTOR_FREE(&git.untracked.files);
-    free(git.unstaged.raw);
-    free_files(&git.unstaged.files);
-    free(git.staged.raw);
-    free_files(&git.staged.files);
 
     return EXIT_SUCCESS;
 }
