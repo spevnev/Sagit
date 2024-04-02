@@ -28,7 +28,7 @@ static void_vec action_args = {0};
         VECTOR_PUSH(&lines, buffer);                            \
     } while (0)
 
-static void render() {
+static void render(void) {
     for (size_t i = 0; i < lines.length; i++) free(lines.data[i]);
     lines.length = 0;
     actions.length = 0;
@@ -100,7 +100,7 @@ static void render() {
     }
 }
 
-static void cleanup() {
+static void cleanup(void) {
     endwin();
 
     free(git.untracked.raw);
@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
 
     if (!is_git_initialized()) ERROR("Git is not initialized in the current directory.\n");
     if (get_git_state(&git)) ERROR("Unable to get git state.\n");
-    render(&git);
+    render();
 
     setlocale(LC_ALL, "");
     initscr();

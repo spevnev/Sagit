@@ -124,7 +124,7 @@ static FileVec parse_diff(char *diff) {
     return files;
 }
 
-int is_git_initialized() {
+int is_git_initialized(void) {
     int status;
     char *output = git_exec(&status, CMD("git", "status"));
     free(output);
