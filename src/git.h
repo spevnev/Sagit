@@ -3,33 +3,53 @@
 
 #include "vector.h"
 
-DEFINE_VECTOR_TYPE(str_vec_vec, str_vec);
+typedef struct {
+    char is_folded;
+
+    char *header;
+    str_vec lines;
+} Hunk;
+
+DEFINE_VECTOR_TYPE(HunkVec, Hunk);
 
 typedef struct {
+    char is_folded;
+
     char *src;
     char *dest;
-    str_vec_vec hunks;
+    HunkVec hunks;
 } File;
 
 DEFINE_VECTOR_TYPE(FileVec, File);
 
+// NOTE: Actual sections (from State) must have the same layout
+typedef struct {
+    char is_folded;
+} Section;
+
 typedef struct {
     struct {
+        char is_folded;
+
         char *raw;
         str_vec files;
     } untracked;
     struct {
+        char is_folded;
+
         char *raw;
         FileVec files;
     } unstaged;
     struct {
+        char is_folded;
+
         char *raw;
         FileVec files;
     } staged;
-} GitState;
+} State;
 
 int is_git_initialized(void);
-int get_git_state(GitState *git);
+int get_git_state(State *state);
 void free_files(FileVec *vec);
 
 #endif  // GIT_H

@@ -99,6 +99,7 @@ static FileVec parse_diff(char *diff) {
         i += 2;
 
         File file = {0};
+        file.is_folded = 1;
         file.src = lines.data[i++] + 4;
         file.dest = lines.data[i++] + 4;
 
@@ -106,12 +107,12 @@ static FileVec parse_diff(char *diff) {
             if (lines.data[i][0] == 'd') break;
             assert(lines.data[i][0] == '@');  // hunk header
 
-            str_vec hunk = {0};
-            VECTOR_PUSH(&hunk, lines.data[i++]);
+            Hunk hunk = {0};
+            hunk.header = lines.data[i++];
 
             while (i < lines.length) {
                 if (lines.data[i][0] == '@' || lines.data[i][0] == 'd') break;
-                VECTOR_PUSH(&hunk, lines.data[i++]);
+                VECTOR_PUSH(&hunk.lines, lines.data[i++]);
             }
 
             VECTOR_PUSH(&file.hunks, hunk);
@@ -132,15 +133,15 @@ int is_git_initialized(void) {
     return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 }
 
-int get_git_state(GitState *git) {
-    git->untracked.raw = git_exec(NULL, CMD("git", "ls-files", "--others", "--exclude-standard"));
-    git->untracked.files = split(git->untracked.raw, '\n');
+int get_git_state(State *state) {
+    state->untracked.raw = git_exec(NULL, CMD("git", "ls-files", "--others", "--exclude-standard"));
+    state->untracked.files = split(state->untracked.raw, '\n');
 
-    git->unstaged.raw = git_exec(NULL, CMD("git", "diff"));
-    git->unstaged.files = parse_diff(git->unstaged.raw);
+    state->unstaged.raw = git_exec(NULL, CMD("git", "diff"));
+    state->unstaged.files = parse_diff(state->unstaged.raw);
 
-    git->staged.raw = git_exec(NULL, CMD("git", "diff", "--staged"));
-    git->staged.files = parse_diff(git->staged.raw);
+    state->staged.raw = git_exec(NULL, CMD("git", "diff", "--staged"));
+    state->staged.files = parse_diff(state->staged.raw);
 
     return 0;
 }
@@ -148,7 +149,7 @@ int get_git_state(GitState *git) {
 void free_files(FileVec *vec) {
     for (size_t i = 0; i < vec->length; i++) {
         for (size_t j = 0; j < vec->data[i].hunks.length; j++) {
-            VECTOR_FREE(&vec->data[i].hunks.data[j]);
+            VECTOR_FREE(&vec->data[i].hunks.data[j].lines);
         }
         VECTOR_FREE(&vec->data[i].hunks);
     }
