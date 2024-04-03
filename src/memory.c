@@ -10,6 +10,8 @@
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 
 static MemoryRegion *new_region(size_t size) {
+    assert(size > 0);
+
     MemoryRegion *region = (MemoryRegion *) malloc(sizeof(MemoryRegion) + size);
     memset(region, 0, sizeof(MemoryRegion));
     region->capacity = size;
@@ -17,6 +19,8 @@ static MemoryRegion *new_region(size_t size) {
 }
 
 static MemoryRegion *ctxt_new_region(MemoryContext *ctxt, size_t min_size) {
+    assert(ctxt != NULL);
+
     size_t size = MAX(ctxt->end->capacity, min_size) * REGION_SIZE_MULTIPLIER;
     MemoryRegion *region = new_region(size);
 
@@ -26,12 +30,16 @@ static MemoryRegion *ctxt_new_region(MemoryContext *ctxt, size_t min_size) {
 }
 
 void ctxt_init(MemoryContext *ctxt) {
+    assert(ctxt != NULL);
+
     MemoryRegion *region = new_region(INITIAL_REGION_SIZE);
     ctxt->begin = region;
     ctxt->end = region;
 }
 
 void ctxt_reset(MemoryContext *ctxt) {
+    assert(ctxt != NULL);
+
     for (MemoryRegion *current = ctxt->begin, *next = NULL; current != NULL; current = next) {
         next = current->next;
         current->used = 0;
@@ -39,6 +47,8 @@ void ctxt_reset(MemoryContext *ctxt) {
 }
 
 void ctxt_free(MemoryContext *ctxt) {
+    assert(ctxt != NULL);
+
     for (MemoryRegion *current = ctxt->begin, *next = NULL; current != NULL; current = next) {
         next = current->next;
         free(current);
@@ -46,7 +56,7 @@ void ctxt_free(MemoryContext *ctxt) {
 }
 
 void *ctxt_alloc(MemoryContext *ctxt, size_t requested_size) {
-    assert(requested_size != 0);
+    assert(ctxt != NULL && requested_size != 0);
 
     // size_t is used to store allocation size and void* to align allocation
     size_t size = requested_size + sizeof(size_t) + sizeof(void *);
@@ -66,7 +76,7 @@ void *ctxt_alloc(MemoryContext *ctxt, size_t requested_size) {
 }
 
 void *ctxt_realloc(MemoryContext *ctxt, void *old_ptr, size_t new_size) {
-    assert(new_size != 0);
+    assert(ctxt != NULL && new_size != 0 && old_ptr != NULL);
 
     size_t old_size = *(((size_t *) old_ptr) - 1);
     assert(new_size > old_size);

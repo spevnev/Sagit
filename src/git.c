@@ -17,6 +17,8 @@
 #define CMD(...) ((char *const[]){__VA_ARGS__, NULL})
 
 static char *git_exec(int *out_status, char *const *args) {
+    assert(args != NULL);
+
     int pipe_fds[2];
     if (pipe(pipe_fds) == -1) ERROR("Couldn't open pipe.\n");
 
@@ -73,8 +75,9 @@ static char *git_exec(int *out_status, char *const *args) {
 // Lines are stored as pointers into the text, thus text must be free after lines.
 // It also modifies text by replacing delimiters with nulls
 static str_vec split(char *text, char delimiter) {
-    str_vec lines = {0};
+    assert(text != NULL);
 
+    str_vec lines = {0};
     char *line_start = text;
     for (char *ch = text; *ch; ch++) {
         if (*ch != delimiter) continue;
@@ -89,9 +92,10 @@ static str_vec split(char *text, char delimiter) {
 }
 
 static FileVec parse_diff(char *diff) {
+    assert(diff != NULL);
+
     str_vec lines = split(diff, '\n');
     FileVec files = {0};
-
     size_t i = 0;
     while (i < lines.length) {
         assert(strncmp(lines.data[i], "diff --git", 10) == 0 && i + 3 < lines.length);  // file header
@@ -135,6 +139,8 @@ int is_git_initialized(void) {
 }
 
 int get_git_state(State *state) {
+    assert(state != NULL);
+
     state->untracked.raw = git_exec(NULL, CMD("git", "ls-files", "--others", "--exclude-standard"));
     state->untracked.files = split(state->untracked.raw, '\n');
 
@@ -147,4 +153,7 @@ int get_git_state(State *state) {
     return 0;
 }
 
-int is_state_empty(State *state) { return state->untracked.files.length == 0 && state->unstaged.files.length == 0 && state->staged.files.length == 0; }
+int is_state_empty(State *state) {
+    assert(state != NULL);
+    return state->untracked.files.length == 0 && state->unstaged.files.length == 0 && state->staged.files.length == 0;
+}

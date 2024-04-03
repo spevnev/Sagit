@@ -95,6 +95,8 @@ static int section_action(void *_section, int ch) {
 }
 
 static void render_files(FileVec *files) {
+    assert(files != NULL);
+
     for (size_t i = 0; i < files->length; i++) {
         File *file = &files->data[i];
 
@@ -142,6 +144,8 @@ void ui_cleanup(void) {
 }
 
 void render(State *state) {
+    assert(state != NULL);
+
     ctxt_reset(&ctxt);
     VECTOR_CLEAR(&lines);
 
@@ -177,6 +181,8 @@ void output(size_t scroll, size_t height) {
 }
 
 void invoke_action(State *state, size_t y, int ch) {
+    assert(state != NULL);
+
     action_t *action = lines.data[y].action;
     if (action == NULL) return;
 
