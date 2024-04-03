@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "error.h"
+#include "memory.h"
 #include "state.h"
 #include "vector.h"
 
@@ -19,6 +20,7 @@ typedef struct {
 
 DEFINE_VECTOR_TYPE(LineVec, Line);
 
+static MemoryContext ctxt = {0};
 static LineVec lines = {0};
 
 #define FOLD_CHAR(is_folded) ((is_folded) ? "▸" : "▾")
@@ -26,7 +28,7 @@ static LineVec lines = {0};
 #define ADD_LINE(action, arg, ...)                           \
     do {                                                     \
         size_t size = snprintf(NULL, 0, __VA_ARGS__) + 1;    \
-        char *str = (char *) malloc(size + 1);               \
+        char *str = (char *) ctxt_alloc(&ctxt, size + 1);    \
         if (str == NULL) ERROR("Process is out of memory."); \
         snprintf(str, size, __VA_ARGS__);                    \
         str[size - 1] = '\n';                                \
@@ -37,18 +39,18 @@ static LineVec lines = {0};
 
 #define EMPTY_LINE() ADD_LINE(NULL, NULL, "")
 
-#define APPEND_LINE(...)                                           \
-    do {                                                           \
-        assert(lines.length > 0);                                  \
-        Line *line = &lines.data[lines.length - 1];                \
-        size_t old_size = strlen(line->str) - 1;                   \
-        size_t add_size = snprintf(NULL, 0, __VA_ARGS__) + 1;      \
-        size_t new_size = old_size + add_size;                     \
-        line->str = (char *) realloc(line->str, new_size + 1);     \
-        if (line->str == NULL) ERROR("Process is out of memory."); \
-        snprintf(line->str + old_size, add_size, __VA_ARGS__);     \
-        line->str[new_size - 1] = '\n';                            \
-        line->str[new_size] = '\0';                                \
+#define APPEND_LINE(...)                                                   \
+    do {                                                                   \
+        assert(lines.length > 0);                                          \
+        Line *line = &lines.data[lines.length - 1];                        \
+        size_t old_size = strlen(line->str) - 1;                           \
+        size_t add_size = snprintf(NULL, 0, __VA_ARGS__) + 1;              \
+        size_t new_size = old_size + add_size;                             \
+        line->str = (char *) ctxt_realloc(&ctxt, line->str, new_size + 1); \
+        if (line->str == NULL) ERROR("Process is out of memory.");         \
+        snprintf(line->str + old_size, add_size, __VA_ARGS__);             \
+        line->str[new_size - 1] = '\n';                                    \
+        line->str[new_size] = '\0';                                        \
     } while (0)
 
 static int hunk_action(void *_hunk, int ch) {
@@ -115,6 +117,8 @@ size_t get_screen_height(void) { return getmaxy(stdscr); }
 size_t get_lines_length(void) { return lines.length; }
 
 void ui_init(void) {
+    ctxt_init(&ctxt);
+
     setlocale(LC_ALL, "");
     initscr();
     cbreak();
@@ -125,13 +129,13 @@ void ui_init(void) {
 void ui_cleanup(void) {
     endwin();
 
-    for (size_t i = 0; i < lines.length; i++) free(lines.data[i].str);
+    ctxt_free(&ctxt);
     VECTOR_FREE(&lines);
 }
 
 void render(State *state) {
-    for (size_t i = 0; i < lines.length; i++) free(lines.data[i].str);
-    lines.length = 0;
+    ctxt_reset(&ctxt);
+    VECTOR_CLEAR(&lines);
 
     // TODO: add colors, italics/bold
 
