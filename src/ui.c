@@ -37,7 +37,15 @@ static LineVec lines = {0};
         VECTOR_PUSH(&lines, line);                           \
     } while (0)
 
-#define EMPTY_LINE() ADD_LINE(NULL, NULL, "")
+#define EMPTY_LINE()                                         \
+    do {                                                     \
+        char *str = (char *) ctxt_alloc(&ctxt, 2);           \
+        if (str == NULL) ERROR("Process is out of memory."); \
+        str[0] = '\n';                                       \
+        str[1] = '\0';                                       \
+        Line line = {str, NULL, NULL};                       \
+        VECTOR_PUSH(&lines, line);                           \
+    } while (0)
 
 #define APPEND_LINE(...)                                                   \
     do {                                                                   \
