@@ -146,3 +146,5 @@ int get_git_state(State *state) {
 
     return 0;
 }
+
+int is_state_empty(State *state) { return state->untracked.files.length == 0 && state->unstaged.files.length == 0 && state->staged.files.length == 0; }

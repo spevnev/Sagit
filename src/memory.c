@@ -54,17 +54,14 @@ void *ctxt_alloc(MemoryContext *ctxt, size_t requested_size) {
     MemoryRegion *current = ctxt->begin;
     for (MemoryRegion *next = NULL; current != NULL; current = next) {
         next = current->next;
-        if (current->used + size <= ctxt->end->capacity) break;
+        if (current->used + size <= current->capacity) break;
     }
-    if (current == NULL) {
-        current = ctxt_new_region(ctxt, size);
-        assert(current->used + size <= current->capacity);
-    }
+    if (current == NULL) current = ctxt_new_region(ctxt, size);
 
-    size_t *ptr = (size_t *) (current->buffer + current->used - (current->used % sizeof(void *)) + sizeof(void *));
+    size_t alignment = sizeof(void *) - (current->used % sizeof(void *));
+    size_t *ptr = (size_t *) (current->buffer + current->used + alignment);
     current->used += size;
     *ptr = requested_size;
-    // TODO: there seems to be some kind of bug, which might be caused due to alignment(void*)
     return (void *) (ptr + 1);
 }
 

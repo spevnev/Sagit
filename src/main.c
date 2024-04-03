@@ -33,6 +33,10 @@ int main(int argc, char **argv) {
 
     if (!is_git_initialized()) ERROR("Git is not initialized in the current directory.\n");
     if (get_git_state(&state)) ERROR("Unable to get git state.\n");
+    if (is_state_empty(&state)) {
+        printf("There are no changes or untracked files.\n");
+        return EXIT_SUCCESS;
+    }
 
     ui_init();
     atexit(cleanup);
