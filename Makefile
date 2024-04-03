@@ -1,5 +1,7 @@
-CC      := cc
-CFLAGS  := -O2 -std=c17 -Wall -Wextra -pedantic -Isrc -MMD -MP 
+INSTALL := ginstall
+CC      := gcc
+
+CFLAGS  := -O2 -std=c17 -Wall -Wextra -pedantic -Isrc -MMD -MP
 LDFLAGS := -l:libncursesw.so.5 -l:libtinfo.so.5
 
 ifeq ($(DEBUG),1)
@@ -8,14 +10,16 @@ else
 	CFLAGS += -s
 endif
 
+BIN_PATH ?= /usr/local/bin
+BIN_NAME := sagit
+
 SOURCE_DIR  := src
 BUILD_DIR   := build
 OBJECTS_DIR := $(BUILD_DIR)/$(SOURCE_DIR)
-BIN_PATH    ?= /usr/local/bin
 
 SOURCES := $(shell find $(SOURCE_DIR) -type f -name '*.c')
 OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(OBJECTS_DIR)/%.o, $(SOURCES))
-BINARY  := $(BUILD_DIR)/sagit
+BINARY  := $(BUILD_DIR)/$(BIN_NAME)
 
 OBJECTS      := $(patsubst $(SOURCE_DIR)/%.c, $(OBJECTS_DIR)/%.o, $(SOURCES))
 DEPENDENCIES := $(patsubst %.o, %.d, $(OBJECTS))
@@ -32,11 +36,11 @@ clean:
 
 .PHONY: install
 install: build
-	install -D -m 755 $(BINARY) $(BIN_PATH)/$(BINARY)
+	$(INSTALL) -D -m 755 $(BINARY) $(BIN_PATH)/$(BIN_NAME)
 
 .PHONY: uninstall
 uninstall: build
-	rm $(BIN_PATH)/$(BINARY)
+	rm $(BIN_PATH)/$(BIN_NAME)
 
 $(BINARY): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
