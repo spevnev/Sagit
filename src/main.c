@@ -13,13 +13,7 @@ static State state = {0};
 
 static void cleanup(void) {
     ui_cleanup();
-
-    free(state.untracked.raw);
-    VECTOR_FREE(&state.untracked.files);
-    free(state.unstaged.raw);
-    free_files(&state.unstaged.files);
-    free(state.staged.raw);
-    free_files(&state.staged.files);
+    free_state(&state);
 }
 
 static void stop_running(int signal) {

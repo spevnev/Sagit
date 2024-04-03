@@ -1,3 +1,6 @@
+// Simple dynamic array implementation using macros.
+// NOTE: You can't take pointers to vector elements due to realloc calls.
+
 #ifndef VECTOR_H
 #define VECTOR_H
 
@@ -11,6 +14,11 @@
         size_t length;                 \
         type *data;                    \
     } name
+
+// "Removes" all elements without changing capacity and changing memory
+#define VECTOR_CLEAR(vec) (vec)->length = 0;
+
+#define VECTOR_FREE(vec) free((vec)->data)
 
 #define VECTOR_PUSH(vec, element)                                                    \
     do {                                                                             \
@@ -31,8 +39,6 @@
         assert((vec)->length > 0); \
         (vec)->length--;           \
     } while (0)
-
-#define VECTOR_FREE(vec) free((vec)->data)
 
 DEFINE_VECTOR_TYPE(str_vec, char *);
 DEFINE_VECTOR_TYPE(void_vec, void *);

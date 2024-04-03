@@ -4,6 +4,7 @@
 #include <ncurses.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "error.h"
 #include "state.h"
 #include "vector.h"
@@ -110,6 +111,9 @@ static void render_files(FileVec *files) {
     }
 }
 
+size_t get_screen_height(void) { return getmaxy(stdscr); }
+size_t get_lines_length(void) { return lines.length; }
+
 void ui_init(void) {
     setlocale(LC_ALL, "");
     initscr();
@@ -167,6 +171,3 @@ void invoke_action(State *state, size_t y, int ch) {
     int rerender = action(lines.data[y].action_arg, ch);
     if (rerender) render(state);
 }
-
-size_t get_screen_height(void) { return getmaxy(stdscr); }
-size_t get_lines_length(void) { return lines.length; }

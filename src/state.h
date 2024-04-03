@@ -48,6 +48,6 @@ typedef struct {
     } staged;
 } State;
 
-void free_files(FileVec *vec);
+void free_state(State *state);
 
 #endif  // STATE_H
