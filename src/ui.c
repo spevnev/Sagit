@@ -134,6 +134,9 @@ void ui_init(void) {
     cbreak();
     noecho();
     start_color();
+    set_escdelay(0);
+    keypad(stdscr, true);
+    mousemask(MOUSE_UP | MOUSE_DOWN, NULL);
 }
 
 void ui_cleanup(void) {

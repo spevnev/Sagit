@@ -8,6 +8,8 @@
 #include "state.h"
 #include "ui.h"
 
+#define KEY_ESCAPE 27
+
 static char running = 1;
 static State state = {0};
 
@@ -52,24 +54,25 @@ int main(int argc, char **argv) {
         refresh();
 
         int ch = getch();
-        switch (ch) {
-            case 'q':
-                running = 0;
-                break;
-            case 'h':
-                // TODO:
-                break;
-            case 'j':
-                if (cursor < height - 1) cursor++;
-                else if (scroll + height < get_lines_length()) scroll++;
-                break;
-            case 'k':
-                if (cursor > 0) cursor--;
-                else if (scroll > 0) scroll--;
-                break;
-            default:
-                invoke_action(&state, scroll + cursor, ch);
-                break;
+        int mouse = 0;
+        if (ch == KEY_MOUSE) {
+            MEVENT mouse_event = {0};
+            getmouse(&mouse_event);
+            mouse = mouse_event.bstate;
+        }
+
+        if (ch == KEY_ESCAPE || ch == 'q') {
+            running = 0;
+        } else if (ch == 'h') {
+            // TODO:
+        } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_DOWN) {
+            if (cursor < height - 1) cursor++;
+            else if (scroll + height < get_lines_length()) scroll++;
+        } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_UP) {
+            if (cursor > 0) cursor--;
+            else if (scroll > 0) scroll--;
+        } else {
+            invoke_action(&state, scroll + cursor, ch);
         }
     }
 
