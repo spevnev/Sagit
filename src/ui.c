@@ -157,9 +157,6 @@ static void render_files(FileVec *files) {
     }
 }
 
-size_t get_screen_height(void) { return getmaxy(stdscr); }
-size_t get_lines_length(void) { return lines.length; }
-
 void ui_init(void) {
     ctxt_init(&ctxt);
 
@@ -212,8 +209,8 @@ void render(State *state) {
     }
 }
 
-void output(size_t scroll, size_t height) {
-    for (size_t i = 0; i < height; i++) {
+void output(size_t scroll) {
+    for (size_t i = 0; i < getmaxy(stdscr); i++) {
         if (scroll + i >= lines.length) break;
 
         Line line = lines.data[scroll + i];
@@ -232,3 +229,25 @@ void invoke_action(State *state, size_t y, int ch) {
     int rerender = action(lines.data[y].action_arg, ch);
     if (rerender) render(state);
 }
+
+// clang-format off
+static const char *help_lines[] = {
+    "Controls:"                       ,
+    "q, esc        - quit, close help",
+    "h             - show this page"  ,
+    "j, down arrow - next line"       ,
+    "k, up arrow   - previous line"   ,
+    "f, space      - (un)fold block"
+};
+// clang-format on
+
+void output_help(size_t scroll) {
+    for (size_t i = 0; i < getmaxy(stdscr); i++) {
+        if (scroll + i >= get_help_length()) break;
+        printw("%s\n", help_lines[scroll + i]);
+    }
+}
+
+size_t get_screen_height(void) { return getmaxy(stdscr); }
+size_t get_lines_length(void) { return lines.length; }
+size_t get_help_length(void) { return sizeof(help_lines) / sizeof(help_lines[0]); }
