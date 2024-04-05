@@ -64,3 +64,32 @@ char *git_exec(int *out_status, char *const *args) {
 
     return buffer;
 }
+
+int git_apply(char *const *args, const char *patch) {
+    assert(args != NULL && patch != NULL);
+
+    int pipe_fds[2];
+    if (pipe(pipe_fds) == -1) ERROR("Couldn't open pipe.\n");
+
+    pid_t pid = fork();
+    if (pid == -1) ERROR("Couldn't fork process.\n");
+    if (pid == 0) {
+        int read_fd = pipe_fds[0];
+        if (close(pipe_fds[1]) == -1) exit(1);
+
+        if (dup2(read_fd, STDIN_FILENO) == -1) exit(1);
+        if (execvp("git", args) == -1) exit(1);
+    }
+
+    int write_fd = pipe_fds[1];
+    if (close(pipe_fds[0]) == -1) ERROR("Couldn't close pipe.\n");
+
+    ssize_t bytes = write(write_fd, patch, strlen(patch));
+    if (bytes != ((ssize_t) strlen(patch))) ERROR("Couldn't write the entire patch.\n");
+
+    int status;
+    if (waitpid(pid, &status, 0) == -1) ERROR("Couldn't wait for child process.\n");
+    if (close(write_fd) == -1) ERROR("Couldn't close pipe.\n");
+
+    return status;
+}
