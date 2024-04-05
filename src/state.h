@@ -5,7 +5,6 @@
 
 typedef struct {
     char is_folded;
-
     char *header;
     str_vec lines;
 } Hunk;
@@ -14,7 +13,6 @@ DEFINE_VECTOR_TYPE(HunkVec, Hunk);
 
 typedef struct {
     char is_folded;
-
     char *src;
     char *dest;
     HunkVec hunks;

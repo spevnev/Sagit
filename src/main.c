@@ -29,16 +29,16 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    struct sigaction action = {0};
-    action.sa_handler = stop_running;
-    sigaction(SIGINT, &action, NULL);
-
     if (!is_git_initialized()) ERROR("Git is not initialized in the current directory.\n");
-    if (get_git_state(&state)) ERROR("Unable to get git state.\n");
+    get_git_state(&state);
     if (is_state_empty(&state)) {
         printf("There are no changes or untracked files.\n");
         return EXIT_SUCCESS;
     }
+
+    struct sigaction action = {0};
+    action.sa_handler = stop_running;
+    sigaction(SIGINT, &action, NULL);
 
     ui_init();
     atexit(cleanup);
@@ -92,7 +92,8 @@ int main(int argc, char **argv) {
                 if (cursor > 0) cursor--;
                 else if (scroll > 0) scroll--;
             } else {
-                invoke_action(&state, scroll + cursor, ch);
+                int result = invoke_action(scroll + cursor, ch);
+                if (result & AC_RERENDER) render(&state);
             }
         }
     }

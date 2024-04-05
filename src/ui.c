@@ -67,7 +67,7 @@ static int hunk_action(void *_hunk, int ch) {
 
     if (ch == ' ') {
         hunk->is_folded ^= 1;
-        return 1;
+        return AC_RERENDER;
     }
 
     return 0;
@@ -78,7 +78,7 @@ static int file_action(void *_file, int ch) {
 
     if (ch == ' ') {
         file->is_folded ^= 1;
-        return 1;
+        return AC_RERENDER;
     }
 
     return 0;
@@ -89,7 +89,7 @@ static int section_action(void *_section, int ch) {
 
     if (ch == ' ') {
         section->is_folded ^= 1;
-        return 1;
+        return AC_RERENDER;
     }
 
     return 0;
@@ -210,7 +210,7 @@ void render(State *state) {
 }
 
 void output(size_t scroll) {
-    for (size_t i = 0; i < getmaxy(stdscr); i++) {
+    for (int i = 0; i < getmaxy(stdscr); i++) {
         if (scroll + i >= lines.length) break;
 
         Line line = lines.data[scroll + i];
@@ -220,14 +220,10 @@ void output(size_t scroll) {
     }
 }
 
-void invoke_action(State *state, size_t y, int ch) {
-    assert(state != NULL);
-
+int invoke_action(size_t y, int ch) {
     action_t *action = lines.data[y].action;
-    if (action == NULL) return;
-
-    int rerender = action(lines.data[y].action_arg, ch);
-    if (rerender) render(state);
+    if (action != NULL) return action(lines.data[y].action_arg, ch);
+    return 0;
 }
 
 // clang-format off
@@ -242,7 +238,7 @@ static const char *help_lines[] = {
 // clang-format on
 
 void output_help(size_t scroll) {
-    for (size_t i = 0; i < getmaxy(stdscr); i++) {
+    for (int i = 0; i < getmaxy(stdscr); i++) {
         if (scroll + i >= get_help_length()) break;
         printw("%s\n", help_lines[scroll + i]);
     }

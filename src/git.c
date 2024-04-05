@@ -138,7 +138,7 @@ int is_git_initialized(void) {
     return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 }
 
-int get_git_state(State *state) {
+void get_git_state(State *state) {
     assert(state != NULL);
 
     state->untracked.raw = git_exec(NULL, CMD("git", "ls-files", "--others", "--exclude-standard"));
@@ -149,8 +149,9 @@ int get_git_state(State *state) {
 
     state->staged.raw = git_exec(NULL, CMD("git", "diff", "--staged"));
     state->staged.files = parse_diff(state->staged.raw);
+}
 
-    return 0;
+
 }
 
 int is_state_empty(State *state) {
