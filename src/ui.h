@@ -4,13 +4,8 @@
 #include <stdlib.h>
 #include "state.h"
 
-// clang-format off
-#define MOUSE_UP   1 << 19
+#define MOUSE_UP 1 << 19
 #define MOUSE_DOWN 1 << 27
-
-static int AC_RERENDER      = 1 << 0;
-static int AC_REFRESH_STATE = 1 << 1;
-// clang-format on
 
 void ui_init(void);
 void ui_cleanup(void);

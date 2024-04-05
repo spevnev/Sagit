@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "action.h"
 #include "error.h"
 #include "git.h"
 #include "memory.h"
@@ -62,54 +63,6 @@ static LineVec lines = {0};
         line->str[new_size - 1] = '\n';                                    \
         line->str[new_size] = '\0';                                        \
     } while (0)
-
-static int hunk_action(void *_hunk, int ch) {
-    Hunk *hunk = (Hunk *) _hunk;
-
-    if (ch == ' ') {
-        hunk->is_folded ^= 1;
-        return AC_RERENDER;
-    }
-
-    return 0;
-}
-
-static int file_action(void *_file, int ch) {
-    File *file = (File *) _file;
-
-    if (ch == ' ') {
-        file->is_folded ^= 1;
-        return AC_RERENDER;
-    } else if (ch == 'u') {
-        // TODO: check that it is staged
-        git_unstage_file(file->dest + 2);
-        return AC_RERENDER | AC_REFRESH_STATE;
-    }
-
-    return 0;
-}
-
-static int untracked_file_action(void *_file, int ch) {
-    char *file = (char *) _file;
-
-    if (ch == 's') {
-        git_stage_file(file);
-        return AC_RERENDER | AC_REFRESH_STATE;
-    }
-
-    return 0;
-}
-
-static int section_action(void *_section, int ch) {
-    Section *section = (Section *) _section;
-
-    if (ch == ' ') {
-        section->is_folded ^= 1;
-        return AC_RERENDER;
-    }
-
-    return 0;
-}
 
 static int section_style = 0;
 static int file_style = 0;
@@ -209,7 +162,7 @@ void render(State *state) {
         if (!state->untracked.is_folded) {
             for (size_t i = 0; i < state->untracked.files.length; i++) {
                 char *file_path = state->untracked.files.data[i];
-                ADD_LINE(&untracked_file_action, file_path, file_style, "created %s", file_path);
+                ADD_LINE(&file_action, file_path, file_style, "created %s", file_path);
             }
         }
         EMPTY_LINE();

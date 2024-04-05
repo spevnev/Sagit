@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "action.h"
 #include "error.h"
 #include "git.h"
 #include "state.h"
@@ -93,7 +94,7 @@ int main(int argc, char **argv) {
                 else if (scroll > 0) scroll--;
             } else {
                 int result = invoke_action(scroll + cursor, ch);
-                if (result & AC_REFRESH_STATE) update_git_state(&state);
+                if (result & AC_UPDATE_STATE) update_git_state(&state);
                 if (result & AC_RERENDER) render(&state);
             }
         }
