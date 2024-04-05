@@ -8,7 +8,7 @@
 
 #define INITIAL_BUFFER_SIZE 1024
 
-#define NO_GIT_BINARY 100
+#define NO_GIT_BINARY 100  // exit code for forked process
 
 char *git_exec(int *out_status, char *const *args) {
     assert(args != NULL);
@@ -18,7 +18,6 @@ char *git_exec(int *out_status, char *const *args) {
 
     pid_t pid = fork();
     if (pid == -1) ERROR("Couldn't fork process.\n");
-
     if (pid == 0) {
         int write_fd = pipe_fds[1];
         if (close(pipe_fds[0]) == -1) exit(1);
@@ -26,7 +25,7 @@ char *git_exec(int *out_status, char *const *args) {
         if (dup2(write_fd, STDOUT_FILENO) == -1) exit(1);
         if (dup2(write_fd, STDERR_FILENO) == -1) exit(1);
 
-        if (execvp("git", args) == -1 && errno == ENOENT) exit(NO_GIT_BINARY);
+        if (execvp("git", args) == -1) exit(errno == ENOENT ? NO_GIT_BINARY : 1);
     }
 
     int read_fd = pipe_fds[0];

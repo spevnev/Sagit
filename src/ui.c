@@ -93,13 +93,16 @@ static void init_styles(void) {
     del_line_style = COLOR_PAIR(pair_num);
 }
 
-static void render_files(FileVec *files) {
+static void render_files(FileVec *files, char staged) {
     assert(files != NULL);
+    action_t *file_action = staged ? &staged_file_action : &unstaged_file_action;
+    action_t *hunk_action = staged ? &staged_hunk_action : &unstaged_hunk_action;
+    action_t *line_action = staged ? &staged_line_action : &unstaged_line_action;
 
     for (size_t i = 0; i < files->length; i++) {
         File *file = &files->data[i];
 
-        ADD_LINE(&file_action, file, file_style, "%s", FOLD_CHAR(file->is_folded));
+        ADD_LINE(file_action, file, file_style, "%s", FOLD_CHAR(file->is_folded));
         if (strcmp(file->src + 2, file->dest + 2) == 0) {
             APPEND_LINE("modified %s", file->src + 2);
         } else if (strcmp(file->dest, "/dev/null") == 0) {
@@ -114,7 +117,7 @@ static void render_files(FileVec *files) {
         for (size_t i = 0; i < file->hunks.length; i++) {
             Hunk *hunk = &file->hunks.data[i];
 
-            ADD_LINE(&hunk_action, hunk, hunk_style, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
+            ADD_LINE(hunk_action, hunk, hunk_style, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
             if (hunk->is_folded) continue;
 
             for (size_t j = 0; j < hunk->lines.length; j++) {
@@ -122,7 +125,7 @@ static void render_files(FileVec *files) {
                 int style = def_line_style;
                 if (ch == '+') style = add_line_style;
                 if (ch == '-') style = del_line_style;
-                ADD_LINE(NULL, NULL, style, "%s", hunk->lines.data[j]);
+                ADD_LINE(line_action, NULL, style, "%s", hunk->lines.data[j]);
             }
         }
     }
@@ -162,7 +165,7 @@ void render(State *state) {
         if (!state->untracked.is_folded) {
             for (size_t i = 0; i < state->untracked.files.length; i++) {
                 char *file_path = state->untracked.files.data[i];
-                ADD_LINE(&file_action, file_path, file_style, "created %s", file_path);
+                ADD_LINE(&untracked_file_action, file_path, file_style, "created %s", file_path);
             }
         }
         EMPTY_LINE();
@@ -170,13 +173,13 @@ void render(State *state) {
 
     if (state->unstaged.files.length > 0) {
         ADD_LINE(&section_action, &state->unstaged, section_style, "%sUnstaged changes:", FOLD_CHAR(state->unstaged.is_folded));
-        if (!state->unstaged.is_folded) render_files(&state->unstaged.files);
+        if (!state->unstaged.is_folded) render_files(&state->unstaged.files, 0);
         EMPTY_LINE();
     }
 
     if (state->staged.files.length > 0) {
         ADD_LINE(&section_action, &state->staged, section_style, "%sStaged changes:", FOLD_CHAR(state->staged.is_folded));
-        if (!state->staged.is_folded) render_files(&state->staged.files);
+        if (!state->staged.is_folded) render_files(&state->staged.files, 1);
         EMPTY_LINE();
     }
 }

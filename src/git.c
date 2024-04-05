@@ -33,11 +33,22 @@ static FileVec parse_diff(char *diff) {
     FileVec files = {0};
     size_t i = 0;
     while (i < lines.length) {
+        // check git diff header
         assert(strncmp(lines.data[i], "diff --git", 10) == 0 && i + 1 < lines.length);
         i++;
-        if (strncmp(lines.data[i], "new file mode", 13) == 0) i++;
-        assert(strncmp(lines.data[i], "index ", 6) == 0 && i + 1 < lines.length);
-        i++;
+
+        // skip extended header lines
+        for (int j = 0; j < 4; j++) {
+            // clang-format off
+            if (strncmp(lines.data[i], "new file mode",     13) == 0 ||
+                strncmp(lines.data[i], "deleted file mode", 17) == 0 ||
+                strncmp(lines.data[i], "index",              5) == 0 ||
+                strncmp(lines.data[i], "mode",               4) == 0) {
+                i++;
+                assert(i < lines.length);
+            }
+            // clang-format on
+        }
 
         File file = {0};
         file.is_folded = 1;
