@@ -93,6 +93,7 @@ int main(int argc, char **argv) {
                 else if (scroll > 0) scroll--;
             } else {
                 int result = invoke_action(scroll + cursor, ch);
+                if (result & AC_REFRESH_STATE) update_git_state(&state);
                 if (result & AC_RERENDER) render(&state);
             }
         }

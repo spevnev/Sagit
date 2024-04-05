@@ -4,7 +4,12 @@
 #include "state.h"
 
 int is_git_initialized(void);
+
 void get_git_state(State *state);
 int is_state_empty(State *state);
+void update_git_state(State *state);
+
+void git_stage_file(char *file);
+void git_unstage_file(char *file);
 
 #endif  // GIT_H

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "error.h"
+#include "git.h"
 #include "memory.h"
 #include "state.h"
 #include "vector.h"
@@ -79,6 +80,21 @@ static int file_action(void *_file, int ch) {
     if (ch == ' ') {
         file->is_folded ^= 1;
         return AC_RERENDER;
+    } else if (ch == 'u') {
+        // TODO: check that it is staged
+        git_unstage_file(file->dest + 2);
+        return AC_RERENDER | AC_REFRESH_STATE;
+    }
+
+    return 0;
+}
+
+static int untracked_file_action(void *_file, int ch) {
+    char *file = (char *) _file;
+
+    if (ch == 's') {
+        git_stage_file(file);
+        return AC_RERENDER | AC_REFRESH_STATE;
     }
 
     return 0;
@@ -131,12 +147,14 @@ static void render_files(FileVec *files) {
         File *file = &files->data[i];
 
         ADD_LINE(&file_action, file, file_style, "%s", FOLD_CHAR(file->is_folded));
-        if (strcmp(file->dest, "/dev/null") == 0) {
-            APPEND_LINE("deleted  %s", file->src + 2);
-        } else if (strcmp(file->src + 2, file->dest + 2) != 0) {
-            APPEND_LINE("renamed  %s -> %s", file->src + 2, file->dest + 2);
-        } else {
+        if (strcmp(file->src + 2, file->dest + 2) == 0) {
             APPEND_LINE("modified %s", file->src + 2);
+        } else if (strcmp(file->dest, "/dev/null") == 0) {
+            APPEND_LINE("deleted  %s", file->src + 2);
+        } else if (strcmp(file->src, "/dev/null") == 0) {
+            APPEND_LINE("created  %s", file->dest + 2);
+        } else {
+            APPEND_LINE("renamed  %s -> %s", file->src + 2, file->dest + 2);
         }
         if (file->is_folded) continue;
 
@@ -190,7 +208,8 @@ void render(State *state) {
         ADD_LINE(&section_action, &state->untracked, section_style, "%sUntracked files:", FOLD_CHAR(state->untracked.is_folded));
         if (!state->untracked.is_folded) {
             for (size_t i = 0; i < state->untracked.files.length; i++) {
-                ADD_LINE(NULL, NULL, file_style, "created %s", state->untracked.files.data[i]);
+                char *file_path = state->untracked.files.data[i];
+                ADD_LINE(&untracked_file_action, file_path, file_style, "created %s", file_path);
             }
         }
         EMPTY_LINE();
@@ -228,12 +247,14 @@ int invoke_action(size_t y, int ch) {
 
 // clang-format off
 static const char *help_lines[] = {
-    "Controls:"                       ,
-    "q, esc        - quit, close help",
-    "h             - show this page"  ,
-    "j, down arrow - next line"       ,
-    "k, up arrow   - previous line"   ,
-    "f, space      - (un)fold block"
+    "Help page. Keybindings:"                                ,
+    "q, esc        - quit, close help"                       ,
+    "h             - show this page"                         ,
+    "j, down arrow - next line"                              ,
+    "k, up arrow   - previous line"                          ,
+    "f, space      - (un)fold block"                         ,
+    "s             - stage untracked file or unstaged change",
+    "u             - unstaged staged change"
 };
 // clang-format on
 
