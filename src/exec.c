@@ -86,10 +86,10 @@ int git_apply(char *const *args, const char *patch) {
 
     ssize_t bytes = write(write_fd, patch, strlen(patch));
     if (bytes != ((ssize_t) strlen(patch))) ERROR("Couldn't write the entire patch.\n");
+    if (close(write_fd) == -1) ERROR("Couldn't close pipe.\n");
 
     int status;
     if (waitpid(pid, &status, 0) == -1) ERROR("Couldn't wait for child process.\n");
-    if (close(write_fd) == -1) ERROR("Couldn't close pipe.\n");
 
     return status;
 }

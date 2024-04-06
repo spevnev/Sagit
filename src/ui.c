@@ -116,8 +116,11 @@ static void render_files(FileVec *files, char staged) {
 
         for (size_t i = 0; i < file->hunks.length; i++) {
             Hunk *hunk = &file->hunks.data[i];
+            HunkArgs *args = (HunkArgs *) ctxt_alloc(&ctxt, sizeof(HunkArgs));
+            args->file = file;
+            args->hunk = hunk;
 
-            ADD_LINE(hunk_action, hunk, hunk_style, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
+            ADD_LINE(hunk_action, args, hunk_style, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
             if (hunk->is_folded) continue;
 
             for (size_t j = 0; j < hunk->lines.length; j++) {

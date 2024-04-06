@@ -53,14 +53,14 @@ int staged_file_action(void *_file, int ch) {
     return 0;
 }
 
-int unstaged_hunk_action(void *_hunk, int ch) {
-    Hunk *hunk = (Hunk *) _hunk;
+int unstaged_hunk_action(void *_args, int ch) {
+    HunkArgs *args = (HunkArgs *) _args;
 
     if (ch == ' ') {
-        hunk->is_folded ^= 1;
+        args->hunk->is_folded ^= 1;
         return AC_RERENDER;
     } else if (ch == 's') {
-        // git_unstage_hunk(file, hunk);
+        git_stage_hunk(args->file, args->hunk);
         return AC_RERENDER | AC_UPDATE_STATE;
     }
 

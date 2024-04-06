@@ -14,6 +14,11 @@ int untracked_file_action(void *file_path, int ch);
 int unstaged_file_action(void *file, int ch);
 int staged_file_action(void *file, int ch);
 
+typedef struct {
+    File *file;
+    Hunk *hunk;
+} HunkArgs;
+
 int unstaged_hunk_action(void *hunk, int ch);
 int staged_hunk_action(void *hunk, int ch);
 
