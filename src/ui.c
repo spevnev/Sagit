@@ -67,29 +67,31 @@ static LineVec lines = {0};
 static int section_style = 0;
 static int file_style = 0;
 static int hunk_style = 0;
-static int def_line_style = 0;
+static int line_style = 0;
 static int add_line_style = 0;
 static int del_line_style = 0;
+
+#define BRIGHT(color) (COLORS > 15 ? (color + 8) : color)
 
 static void init_styles(void) {
     short pair_num = 0;
 
-    init_pair(++pair_num, 0, 0);
-    section_style = COLOR_PAIR(pair_num);
+    init_pair(++pair_num, COLOR_WHITE, 0);
+    section_style = COLOR_PAIR(pair_num) | A_BOLD;
 
-    init_pair(++pair_num, 0, 0);
-    file_style = COLOR_PAIR(pair_num);
+    init_pair(++pair_num, COLOR_WHITE, 0);
+    file_style = COLOR_PAIR(pair_num) | A_ITALIC;
 
-    init_pair(++pair_num, 0, 0);
+    init_pair(++pair_num, BRIGHT(COLOR_CYAN), 0);
     hunk_style = COLOR_PAIR(pair_num);
 
-    init_pair(++pair_num, 0, 0);
-    def_line_style = COLOR_PAIR(pair_num);
+    init_pair(++pair_num, BRIGHT(COLOR_WHITE), 0);
+    line_style = COLOR_PAIR(pair_num);
 
-    init_pair(++pair_num, 0, 0);
+    init_pair(++pair_num, BRIGHT(COLOR_GREEN), 0);
     add_line_style = COLOR_PAIR(pair_num);
 
-    init_pair(++pair_num, 0, 0);
+    init_pair(++pair_num, BRIGHT(COLOR_RED), 0);
     del_line_style = COLOR_PAIR(pair_num);
 }
 
@@ -125,7 +127,7 @@ static void render_files(FileVec *files, char staged) {
 
             for (size_t j = 0; j < hunk->lines.length; j++) {
                 char ch = hunk->lines.data[j][0];
-                int style = def_line_style;
+                int style = line_style;
                 if (ch == '+') style = add_line_style;
                 if (ch == '-') style = del_line_style;
                 ADD_LINE(line_action, NULL, style, "%s", hunk->lines.data[j]);
