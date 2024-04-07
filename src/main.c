@@ -9,7 +9,8 @@
 #include "state.h"
 #include "ui.h"
 
-#define KEY_ESCAPE 27
+#define MIN(a, b) ((a) <= (b) ? (a) : (b))
+#define MAX(a, b) ((a) >= (b) ? (a) : (b))
 
 static char running = 1;
 static State state = {0};
@@ -46,15 +47,25 @@ int main(int argc, char **argv) {
     render(&state);
 
     char show_help = 0;
-    size_t saved_scroll = 0;
-    size_t scroll = 0;
-    size_t cursor = 0;
+    int saved_scroll = 0;
+    int scroll = 0;
+    int cursor = 0;
+    int selection = -1;
     while (running) {
+        int y = scroll + cursor;
+
         clear();
         if (show_help) {
             output_help(scroll);
         } else {
-            output(scroll);
+            int selection_start = -1;
+            int selection_end = -1;
+            if (selection != -1) {
+                selection_start = MIN(selection, y);
+                selection_end = MAX(selection, y);
+            }
+
+            output(scroll, selection_start, selection_end);
             move(cursor, 0);
         }
         refresh();
@@ -67,8 +78,13 @@ int main(int argc, char **argv) {
             mouse = mouse_event.bstate;
         }
 
+        if (ch == 'q' || ch == KEY_ESCAPE) {
+            running = 0;
+            break;
+        }
+
         if (show_help) {
-            if (ch == 'q' || ch == KEY_ESCAPE) {
+            if (ch == 'h') {
                 show_help = 0;
                 scroll = saved_scroll;
                 curs_set(1);
@@ -78,24 +94,30 @@ int main(int argc, char **argv) {
                 if (scroll > 0) scroll--;
             }
         } else {
-            if (ch == 'q' || ch == KEY_ESCAPE) {
-                running = 0;
-            } else if (ch == 'h') {
+            if (ch == 'h') {
                 show_help = 1;
                 saved_scroll = scroll;
                 scroll = 0;
                 curs_set(0);
             } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_DOWN) {
-                size_t height = get_screen_height();
+                int height = get_screen_height();
                 if (cursor < height - 1) cursor++;
                 else if (scroll + height < get_lines_length()) scroll++;
+
+                if (!is_line(scroll + cursor)) selection = -1;
             } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_UP) {
                 if (cursor > 0) cursor--;
                 else if (scroll > 0) scroll--;
+
+                if (!is_line(scroll + cursor)) selection = -1;
             } else {
-                int result = invoke_action(scroll + cursor, ch);
+                int result = invoke_action(y, ch);
                 if (result & AC_UPDATE_STATE) update_git_state(&state);
                 if (result & AC_RERENDER) render(&state);
+                if (result & AC_TOGGLE_SELECTION) {
+                    if (selection == -1) selection = y;
+                    else selection = -1;
+                }
             }
         }
     }

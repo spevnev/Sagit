@@ -189,14 +189,19 @@ void render(State *state) {
     }
 }
 
-void output(size_t scroll) {
+void output(size_t scroll, int selection_start, int selection_end) {
     for (int i = 0; i < getmaxy(stdscr); i++) {
-        if (scroll + i >= lines.length) break;
+        int y = scroll + i;
+        if (y >= lines.length) break;
+
+        char is_selected = y >= selection_start && y <= selection_end;
+        int selected_style = is_selected ? A_REVERSE : 0;
 
         Line line = lines.data[scroll + i];
-        attron(line.style);
+        attron(line.style | selected_style);
         printw("%s", line.str);
-        attroff(line.style);
+        // TODO: fill the rest of the line
+        attroff(line.style | selected_style);  // TODO: do not turn off? or completely reset?
     }
 }
 
@@ -208,14 +213,25 @@ int invoke_action(size_t y, int ch) {
 
 // clang-format off
 static const char *help_lines[] = {
-    "Help page. Keybindings:"                                ,
-    "q, esc        - quit, close help"                       ,
-    "h             - show this page"                         ,
-    "j, down arrow - next line"                              ,
-    "k, up arrow   - previous line"                          ,
-    "f, space      - (un)fold block"                         ,
-    "s             - stage untracked file or unstaged change",
-    "u             - unstaged staged change"
+    "Keybindings:"                                                             ,
+    "q, esc  - quit"                                                           ,
+    "h       - open/close (this) help"                                         ,
+    "j, down - next line"                                                      ,
+    "k, up   - previous line"                                                  ,
+    "space   - on section, file, hunk: fold/unfold"                            ,
+    "          on line: start selecting a range"                               ,
+    "s       - stage untracked/unstaged change"                                ,
+    "u       - unstaged staged change"                                         ,
+    ""                                                                         ,
+    "(Un)Staging scopes:"                                                      ,
+    "Files and hunks by selecting their headers,"                              ,
+    "Lines and ranges within hunks."                                           ,
+    ""                                                                         ,
+    "Selecting a range:"                                                       ,
+    "Ranges must be selected within a single hunk!"                            ,
+    "To start selecting a range press space and then move cursor to select."   ,
+    "When it is selected, any action will be performed on the selected area."  ,
+    "To deselect, press space again or go out of hunk's scope."
 };
 // clang-format on
 
@@ -226,6 +242,11 @@ void output_help(size_t scroll) {
     }
 }
 
-size_t get_screen_height(void) { return getmaxy(stdscr); }
+int get_screen_height(void) { return getmaxy(stdscr); }
 size_t get_lines_length(void) { return lines.length; }
 size_t get_help_length(void) { return sizeof(help_lines) / sizeof(help_lines[0]); }
+char is_line(int y) {
+    // TODO: find a proper way...
+    assert(y < lines.length);
+    return lines.data[y].action == &unstaged_line_action || lines.data[y].action == &staged_line_action;
+}

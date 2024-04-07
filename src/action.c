@@ -84,7 +84,9 @@ int staged_hunk_action(void *_args, int ch) {
 int unstaged_line_action(void *_line, int ch) {
     char *line = (char *) _line;
 
-    if (ch == 's') {
+    if (ch == ' ') {
+        return AC_TOGGLE_SELECTION;
+    } else if (ch == 's') {
         // git_stage_line(file, line);
         return AC_RERENDER | AC_UPDATE_STATE;
     }
@@ -95,7 +97,9 @@ int unstaged_line_action(void *_line, int ch) {
 int staged_line_action(void *_line, int ch) {
     char *line = (char *) _line;
 
-    if (ch == 'u') {
+    if (ch == ' ') {
+        return AC_TOGGLE_SELECTION;
+    } else if (ch == 'u') {
         // git_unstage_line(file, line);
         return AC_RERENDER | AC_UPDATE_STATE;
     }
