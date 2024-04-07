@@ -13,6 +13,6 @@ void git_stage_file(char *file);
 void git_unstage_file(char *file);
 
 void git_stage_hunk(const File *file, const Hunk *hunk);
-void git_unstage_hunk(File *file, Hunk *hunk);
+void git_unstage_hunk(const File *file, const Hunk *hunk);
 
 #endif  // GIT_H

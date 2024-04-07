@@ -107,6 +107,36 @@ static void merge_files(const FileVec *old_files, FileVec *new_files) {
     }
 }
 
+static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
+    int old_start, old_length, new_start, new_length;
+    int matched = sscanf(hunk->header, hunk_diff_header, &old_start, &old_length, &new_start, &new_length);
+    assert(matched == 4);
+
+    // Because we are staging only a single hunk it should start at the same position as the original file
+    new_start = old_start;
+
+    size_t hunk_length = 0;
+    for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
+
+    size_t file_header_size = snprintf(NULL, 0, file_diff_header, file->src, file->dest, file->src, file->dest);
+    size_t hunk_header_size = snprintf(NULL, 0, hunk_diff_header, old_start, old_length, new_start, new_length);
+    char *patch = (char *) malloc(file_header_size + hunk_header_size + hunk_length + 1);
+
+    char *ptr = patch;
+    ptr += snprintf(ptr, file_header_size + 1, file_diff_header, file->src, file->dest, file->src, file->dest);
+    ptr += snprintf(ptr, hunk_header_size + 1, hunk_diff_header, old_start, old_length, new_start, new_length);
+
+    for (size_t i = 0; i < hunk->lines.length; i++) {
+        size_t len = strlen(hunk->lines.data[i]);
+        memcpy(ptr, hunk->lines.data[i], len);
+        ptr += len;
+        *ptr++ = '\n';
+    }
+    *ptr = '\0';
+
+    return patch;
+}
+
 int is_git_initialized(void) {
     int status;
     char *output = git_exec(&status, CMD("git", "status"));
@@ -170,36 +200,19 @@ void git_unstage_file(char *file_path) {
 }
 
 void git_stage_hunk(const File *file, const Hunk *hunk) {
-    int old_start, old_length, new_start, new_length;
-    int matched = sscanf(hunk->header, hunk_diff_header, &old_start, &old_length, &new_start, &new_length);
-    assert(matched == 4);
+    char *patch = create_patch_from_hunk(file, hunk);
 
-    // Because we are staging only a single hunk it should start at the same position as the original file
-    new_start = old_start;
-
-    size_t hunk_length = 0;
-    for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
-
-    size_t file_header_size = snprintf(NULL, 0, file_diff_header, file->src, file->dest, file->src, file->dest);
-    size_t hunk_header_size = snprintf(NULL, 0, hunk_diff_header, old_start, old_length, new_start, new_length);
-    char *buffer = (char *) malloc(file_header_size + hunk_header_size + hunk_length + 1);
-
-    char *p = buffer;
-    p += snprintf(p, file_header_size + 1, file_diff_header, file->src, file->dest, file->src, file->dest);
-    p += snprintf(p, hunk_header_size + 1, hunk_diff_header, old_start, old_length, new_start, new_length);
-
-    for (size_t i = 0; i < hunk->lines.length; i++) {
-        size_t len = strlen(hunk->lines.data[i]);
-        memcpy(p, hunk->lines.data[i], len);
-        p += len;
-        *p++ = '\n';
-    }
-    *p = '\0';
-
-    int status = git_apply(CMD("git", "apply", "--cached", "-"), buffer);
+    int status = git_apply(CMD("git", "apply", "--cached", "-"), patch);
     if (status != 0) ERROR("Unable to stage the hunk.\n");
 
-    free(buffer);
+    free(patch);
 }
 
-void git_unstage_hunk(File *file, Hunk *hunk) {}
+void git_unstage_hunk(const File *file, const Hunk *hunk) {
+    char *patch = create_patch_from_hunk(file, hunk);
+
+    int status = git_apply(CMD("git", "apply", "--cached", "--reverse", "-"), patch);
+    if (status != 0) ERROR("Unable to unstage the hunk.\n");
+
+    free(patch);
+}
