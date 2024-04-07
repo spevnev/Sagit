@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
 
                 if (!is_line(scroll + cursor)) selection = -1;
             } else {
-                int result = invoke_action(y, ch);
+                int result = invoke_action(y, ch, selection);
                 if (result & AC_UPDATE_STATE) update_git_state(&state);
                 if (result & AC_RERENDER) render(&state);
                 if (result & AC_TOGGLE_SELECTION) {

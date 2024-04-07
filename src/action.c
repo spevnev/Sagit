@@ -3,10 +3,10 @@
 #include "git.h"
 #include "state.h"
 
-int section_action(void *_section, int ch) {
+int section_action(void *_section, ActionArgs *args) {
     Section *section = (Section *) _section;
 
-    if (ch == ' ') {
+    if (args->ch == ' ') {
         section->is_folded ^= 1;
         return AC_RERENDER;
     }
@@ -14,10 +14,10 @@ int section_action(void *_section, int ch) {
     return 0;
 }
 
-int untracked_file_action(void *_file_path, int ch) {
+int untracked_file_action(void *_file_path, ActionArgs *args) {
     char *file_path = (char *) _file_path;
 
-    if (ch == 's') {
+    if (args->ch == 's') {
         git_stage_file(file_path);
         return AC_RERENDER | AC_UPDATE_STATE;
     }
@@ -25,13 +25,13 @@ int untracked_file_action(void *_file_path, int ch) {
     return 0;
 }
 
-int unstaged_file_action(void *_file, int ch) {
+int unstaged_file_action(void *_file, ActionArgs *args) {
     File *file = (File *) _file;
 
-    if (ch == ' ') {
+    if (args->ch == ' ') {
         file->is_folded ^= 1;
         return AC_RERENDER;
-    } else if (ch == 's') {
+    } else if (args->ch == 's') {
         git_stage_file(file->src + 2);
         return AC_RERENDER | AC_UPDATE_STATE;
     }
@@ -39,13 +39,13 @@ int unstaged_file_action(void *_file, int ch) {
     return 0;
 }
 
-int staged_file_action(void *_file, int ch) {
+int staged_file_action(void *_file, ActionArgs *args) {
     File *file = (File *) _file;
 
-    if (ch == ' ') {
+    if (args->ch == ' ') {
         file->is_folded ^= 1;
         return AC_RERENDER;
-    } else if (ch == 'u') {
+    } else if (args->ch == 'u') {
         git_unstage_file(file->dest + 2);
         return AC_RERENDER | AC_UPDATE_STATE;
     }
@@ -53,55 +53,67 @@ int staged_file_action(void *_file, int ch) {
     return 0;
 }
 
-int unstaged_hunk_action(void *_args, int ch) {
-    HunkArgs *args = (HunkArgs *) _args;
+int unstaged_hunk_action(void *_hunk_args, ActionArgs *args) {
+    HunkArgs *hunk_args = (HunkArgs *) _hunk_args;
 
-    if (ch == ' ') {
-        args->hunk->is_folded ^= 1;
+    if (args->ch == ' ') {
+        hunk_args->hunk->is_folded ^= 1;
         return AC_RERENDER;
-    } else if (ch == 's') {
-        git_stage_hunk(args->file, args->hunk);
+    } else if (args->ch == 's') {
+        git_stage_hunk(hunk_args->file, hunk_args->hunk);
         return AC_RERENDER | AC_UPDATE_STATE;
     }
 
     return 0;
 }
 
-int staged_hunk_action(void *_args, int ch) {
-    HunkArgs *args = (HunkArgs *) _args;
+int staged_hunk_action(void *_hunk_args, ActionArgs *args) {
+    HunkArgs *hunk_args = (HunkArgs *) _hunk_args;
 
-    if (ch == ' ') {
-        args->hunk->is_folded ^= 1;
+    if (args->ch == ' ') {
+        hunk_args->hunk->is_folded ^= 1;
         return AC_RERENDER;
-    } else if (ch == 'u') {
-        git_unstage_hunk(args->file, args->hunk);
+    } else if (args->ch == 'u') {
+        git_unstage_hunk(hunk_args->file, hunk_args->hunk);
         return AC_RERENDER | AC_UPDATE_STATE;
     }
 
     return 0;
 }
 
-int unstaged_line_action(void *_line, int ch) {
-    char *line = (char *) _line;
+int unstaged_line_action(void *_line_args, ActionArgs *args) {
+    LineArgs *line_args = (LineArgs *) _line_args;
 
-    if (ch == ' ') {
+    if (args->ch == ' ') {
         return AC_TOGGLE_SELECTION;
-    } else if (ch == 's') {
-        // git_stage_line(file, line);
-        return AC_RERENDER | AC_UPDATE_STATE;
+    } else if (args->ch == 's') {
+        if (args->range_start == -1) {
+            if (line_args->hunk->lines.data[line_args->line][0] == ' ') return 0;
+            git_stage_line(line_args->file, line_args->hunk, line_args->line);
+            return AC_RERENDER | AC_UPDATE_STATE;
+        } else {
+            git_stage_range(line_args->file, line_args->hunk, args->range_start - line_args->hunk_y, args->range_end - line_args->hunk_y);
+            return AC_TOGGLE_SELECTION | AC_RERENDER | AC_UPDATE_STATE;
+        }
     }
 
     return 0;
 }
 
-int staged_line_action(void *_line, int ch) {
-    char *line = (char *) _line;
+int staged_line_action(void *_line_args, ActionArgs *args) {
+    LineArgs *line_args = (LineArgs *) _line_args;
 
-    if (ch == ' ') {
+    if (args->ch == ' ') {
         return AC_TOGGLE_SELECTION;
-    } else if (ch == 'u') {
-        // git_unstage_line(file, line);
-        return AC_RERENDER | AC_UPDATE_STATE;
+    } else if (args->ch == 'u') {
+        if (args->range_start == -1) {
+            if (line_args->hunk->lines.data[line_args->line][0] == ' ') return 0;
+            git_unstage_line(line_args->file, line_args->hunk, line_args->line);
+            return AC_RERENDER | AC_UPDATE_STATE;
+        } else {
+            git_unstage_range(line_args->file, line_args->hunk, args->range_start - line_args->hunk_y, args->range_end - line_args->hunk_y);
+            return AC_TOGGLE_SELECTION | AC_RERENDER | AC_UPDATE_STATE;
+        }
     }
 
     return 0;

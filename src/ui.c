@@ -12,7 +12,8 @@
 #include "state.h"
 #include "vector.h"
 
-typedef int action_t(void *, int);  // return value indicates whether to rerender
+#define MIN(a, b) ((a) <= (b) ? (a) : (b))
+#define MAX(a, b) ((a) >= (b) ? (a) : (b))
 
 typedef struct {
     char *str;
@@ -117,6 +118,7 @@ static void render_files(FileVec *files, char staged) {
         if (file->is_folded) continue;
 
         for (size_t i = 0; i < file->hunks.length; i++) {
+            int hunk_y = lines.length;
             Hunk *hunk = &file->hunks.data[i];
             HunkArgs *args = (HunkArgs *) ctxt_alloc(&ctxt, sizeof(HunkArgs));
             args->file = file;
@@ -130,7 +132,12 @@ static void render_files(FileVec *files, char staged) {
                 int style = line_style;
                 if (ch == '+') style = add_line_style;
                 if (ch == '-') style = del_line_style;
-                ADD_LINE(line_action, NULL, style, "%s", hunk->lines.data[j]);
+                LineArgs *args = (LineArgs *) ctxt_alloc(&ctxt, sizeof(LineArgs));
+                args->file = file;
+                args->hunk = hunk;
+                args->hunk_y = hunk_y;
+                args->line = j;
+                ADD_LINE(line_action, args, style, "%s", hunk->lines.data[j]);
             }
         }
     }
@@ -205,9 +212,15 @@ void output(size_t scroll, int selection_start, int selection_end) {
     }
 }
 
-int invoke_action(size_t y, int ch) {
+int invoke_action(size_t y, int ch, int selection) {
+    ActionArgs args = {ch, -1, -1};
+    if (selection != -1) {
+        args.range_start = MIN(selection, y);
+        args.range_end = MAX(selection, y);
+    }
+
     action_t *action = lines.data[y].action;
-    if (action != NULL) return action(lines.data[y].action_arg, ch);
+    if (action != NULL) return action(lines.data[y].action_arg, &args);
     return 0;
 }
 
@@ -247,6 +260,6 @@ size_t get_lines_length(void) { return lines.length; }
 size_t get_help_length(void) { return sizeof(help_lines) / sizeof(help_lines[0]); }
 char is_line(int y) {
     // TODO: find a proper way...
-    assert(y < lines.length);
+    if (y >= lines.length) return 0;
     return lines.data[y].action == &unstaged_line_action || lines.data[y].action == &staged_line_action;
 }
