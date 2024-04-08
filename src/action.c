@@ -1,5 +1,6 @@
 #include "action.h"
 #include <string.h>
+#include "error.h"
 #include "git.h"
 #include "state.h"
 
@@ -32,7 +33,15 @@ int unstaged_file_action(void *_file, ActionArgs *args) {
         file->is_folded ^= 1;
         return AC_RERENDER;
     } else if (args->ch == 's') {
-        git_stage_file(file->src + 2);
+        if (file->change_type == FC_MODIFIED || file->change_type == FC_DELETED) {
+            git_stage_file(file->src + 2);
+        } else if (file->change_type == FC_CREATED) {
+            git_stage_file(file->dest + 2);
+        } else if (file->change_type == FC_RENAMED) {
+            git_stage_file(file->src + 2);
+            git_stage_file(file->dest + 2);
+        } else ERROR("Unkown file change type.");
+
         return AC_RERENDER | AC_UPDATE_STATE;
     }
 
@@ -46,7 +55,15 @@ int staged_file_action(void *_file, ActionArgs *args) {
         file->is_folded ^= 1;
         return AC_RERENDER;
     } else if (args->ch == 'u') {
-        git_unstage_file(file->dest + 2);
+        if (file->change_type == FC_MODIFIED || file->change_type == FC_DELETED) {
+            git_unstage_file(file->src + 2);
+        } else if (file->change_type == FC_CREATED) {
+            git_unstage_file(file->dest + 2);
+        } else if (file->change_type == FC_RENAMED) {
+            git_unstage_file(file->src + 2);
+            git_unstage_file(file->dest + 2);
+        } else ERROR("Unkown file change type.");
+
         return AC_RERENDER | AC_UPDATE_STATE;
     }
 

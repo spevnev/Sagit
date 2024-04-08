@@ -106,15 +106,12 @@ static void render_files(FileVec *files, char staged) {
         File *file = &files->data[i];
 
         ADD_LINE(file_action, file, file_style, "%s", FOLD_CHAR(file->is_folded));
-        if (strcmp(file->src + 2, file->dest + 2) == 0) {
-            APPEND_LINE("modified %s", file->src + 2);
-        } else if (strcmp(file->dest, "/dev/null") == 0) {
-            APPEND_LINE("deleted  %s", file->src + 2);
-        } else if (strcmp(file->src, "/dev/null") == 0) {
-            APPEND_LINE("created  %s", file->dest + 2);
-        } else {
-            APPEND_LINE("renamed  %s -> %s", file->src + 2, file->dest + 2);
-        }
+        if (file->change_type == FC_MODIFIED) APPEND_LINE("modified %s", file->src + 2);
+        else if (file->change_type == FC_DELETED) APPEND_LINE("deleted %s", file->src + 2);
+        else if (file->change_type == FC_CREATED) APPEND_LINE("created %s", file->dest + 2);
+        else if (file->change_type == FC_RENAMED) APPEND_LINE("renamed %s -> %s", file->src + 2, file->dest + 2);
+        else ERROR("Unkown file change type.");
+
         if (file->is_folded) continue;
 
         for (size_t i = 0; i < file->hunks.length; i++) {

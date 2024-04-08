@@ -11,8 +11,11 @@ typedef struct {
 
 DEFINE_VECTOR_TYPE(HunkVec, Hunk);
 
+enum FileChangeType { FC_CREATED, FC_DELETED, FC_MODIFIED, FC_RENAMED };
+
 typedef struct {
     char is_folded;
+    char change_type;
     char *src;
     char *dest;
     HunkVec hunks;

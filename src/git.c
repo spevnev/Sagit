@@ -59,6 +59,11 @@ static FileVec parse_diff(char *diff) {
         file.src = lines.data[i++] + 4;
         file.dest = lines.data[i++] + 4;
 
+        if (strcmp(file.src + 2, file.dest + 2) == 0) file.change_type = FC_MODIFIED;
+        else if (strcmp(file.src, "/dev/null") == 0) file.change_type = FC_CREATED;
+        else if (strcmp(file.dest, "/dev/null") == 0) file.change_type = FC_DELETED;
+        else file.change_type = FC_RENAMED;
+
         while (i < lines.length) {
             if (lines.data[i][0] == 'd') break;
             assert(lines.data[i][0] == '@');  // hunk header
