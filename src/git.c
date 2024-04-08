@@ -37,22 +37,12 @@ static FileVec parse_diff(char *diff) {
     FileVec files = {0};
     size_t i = 0;
     while (i < lines.length) {
-        // check git diff header
-        assert(strncmp(lines.data[i], "diff --git", 10) == 0 && i + 1 < lines.length);
-        i++;
+        // check diff header
+        assert(strncmp(lines.data[i], "diff --git", 10) == 0);
 
-        // skip extended header lines
-        for (int j = 0; j < 4; j++) {
-            // clang-format off
-            if (strncmp(lines.data[i], "new file mode",     13) == 0 ||
-                strncmp(lines.data[i], "deleted file mode", 17) == 0 ||
-                strncmp(lines.data[i], "index",              5) == 0 ||
-                strncmp(lines.data[i], "mode",               4) == 0) {
-                i++;
-                assert(i < lines.length);
-            }
-            // clang-format on
-        }
+        // skip header
+        while (i < lines.length && lines.data[i][0] != '-') i++;
+        assert(i + 2 < lines.length);
 
         File file = {0};
         file.is_folded = 1;
@@ -148,7 +138,8 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
 
     size_t patch_size = 0;
     for (size_t i = 0; i < hunk->lines.length; i++) patch_size += strlen(hunk->lines.data[i]) + 1;
-    char *patch_body = (char *) malloc(patch_size + 1);
+    patch_size++;  // space for '\0'
+    char *patch_body = (char *) malloc(patch_size);
 
     char *ptr = patch_body;
     for (size_t i = 0; i < hunk->lines.length; i++) {

@@ -99,8 +99,9 @@ int git_apply(char *const *args, const char *patch) {
     int write_fd = pipe_fds[1];
     if (close(pipe_fds[0]) == -1) ERROR("Couldn't close pipe.\n");
 
-    ssize_t bytes = write(write_fd, patch, strlen(patch));
-    if (bytes != ((ssize_t) strlen(patch))) ERROR("Couldn't write the entire patch.\n");
+    ssize_t patch_size = strlen(patch);
+    ssize_t bytes = write(write_fd, patch, patch_size);
+    if (bytes != patch_size) ERROR("Couldn't write the entire patch.\n");
     if (close(write_fd) == -1) ERROR("Couldn't close pipe.\n");
 
     int exit_code;
