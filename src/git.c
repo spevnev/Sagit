@@ -108,23 +108,21 @@ static void merge_files(const FileVec *old_files, FileVec *new_files) {
 }
 
 static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
-    int old_start, old_length, new_start, new_length;
-    int matched = sscanf(hunk->header, hunk_diff_header, &old_start, &old_length, &new_start, &new_length);
-    assert(matched == 4);
-
     // Because we are staging only a single hunk it should start at the same position as the original file
-    new_start = old_start;
+    int ignore, start, old_length, new_length;
+    int matched = sscanf(hunk->header, hunk_diff_header, &start, &old_length, &ignore, &new_length);
+    assert(matched == 4);
 
     size_t hunk_length = 0;
     for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
 
     size_t file_header_size = snprintf(NULL, 0, file_diff_header, file->src, file->dest, file->src, file->dest);
-    size_t hunk_header_size = snprintf(NULL, 0, hunk_diff_header, old_start, old_length, new_start, new_length);
+    size_t hunk_header_size = snprintf(NULL, 0, hunk_diff_header, start, old_length, start, new_length);
     char *patch = (char *) malloc(file_header_size + hunk_header_size + hunk_length + 1);
 
     char *ptr = patch;
     ptr += snprintf(ptr, file_header_size + 1, file_diff_header, file->src, file->dest, file->src, file->dest);
-    ptr += snprintf(ptr, hunk_header_size + 1, hunk_diff_header, old_start, old_length, new_start, new_length);
+    ptr += snprintf(ptr, hunk_header_size + 1, hunk_diff_header, start, old_length, start, new_length);
 
     for (size_t i = 0; i < hunk->lines.length; i++) {
         size_t len = strlen(hunk->lines.data[i]);
@@ -137,17 +135,17 @@ static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
     return patch;
 }
 
-static str_vec create_patch_from_range(const File *file, const Hunk *hunk, int range_start, int range_end, char reverse) {
+static char *create_patch_from_range(const File *file, const Hunk *hunk, int range_start, int range_end, char reverse) {
     // Because we are staging only a single hunk it should start at the same position as the original file
     int ignore, start, old_length, new_length;
     int matched = sscanf(hunk->header, hunk_diff_header, &start, &old_length, &ignore, &new_length);
     assert(matched == 4);
 
-    size_t hunk_length = 0;
-    for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
-    char *patch = (char *) malloc(hunk_length + 1);
+    size_t patch_size = 0;
+    for (size_t i = 0; i < hunk->lines.length; i++) patch_size += strlen(hunk->lines.data[i]) + 1;
+    char *patch_body = (char *) malloc(patch_size + 1);
 
-    char *ptr = patch;
+    char *ptr = patch_body;
     for (size_t i = 0; i < hunk->lines.length; i++) {
         const char *str = hunk->lines.data[i];
         if (i < range_start || i > range_end) {
@@ -183,17 +181,15 @@ static str_vec create_patch_from_range(const File *file, const Hunk *hunk, int r
 
     size_t file_header_size = snprintf(NULL, 0, file_diff_header, file->src, file->dest, file->src, file->dest);
     size_t hunk_header_size = snprintf(NULL, 0, hunk_diff_header, start, old_length, start, new_length);
-    char *patch_header = (char *) malloc(file_header_size + hunk_header_size + 1);
+    char *patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
 
-    ptr = patch_header;
+    ptr = patch;
     ptr += snprintf(ptr, file_header_size + 1, file_diff_header, file->src, file->dest, file->src, file->dest);
     ptr += snprintf(ptr, hunk_header_size + 1, hunk_diff_header, start, old_length, start, new_length);
+    memcpy(ptr, patch_body, patch_size);
+    free(patch_body);
 
-    str_vec patches = {0};
-    VECTOR_PUSH(&patches, patch_header);
-    VECTOR_PUSH(&patches, patch);
-    fprintf(stderr, "%s%s", patch_header, patch);
-    return patches;
+    return patch;
 }
 
 int is_git_initialized(void) {
@@ -273,33 +269,29 @@ void git_unstage_hunk(const File *file, const Hunk *hunk) {
 }
 
 void git_stage_line(const File *file, const Hunk *hunk, int line_idx) {
-    str_vec patches = create_patch_from_range(file, hunk, line_idx, line_idx, 0);
-    int status = git_apply_array(CMD("git", "apply", "--cached", "-"), &patches);
+    char *patch = create_patch_from_range(file, hunk, line_idx, line_idx, 0);
+    int status = git_apply(CMD("git", "apply", "--cached", "-"), patch);
     if (status != 0) ERROR("Unable to stage the line.\n");
-    for (size_t i = 0; i < patches.length; i++) free(patches.data[i]);
-    VECTOR_FREE(&patches);
+    free(patch);
 }
 
 void git_unstage_line(const File *file, const Hunk *hunk, int line_idx) {
-    str_vec patches = create_patch_from_range(file, hunk, line_idx, line_idx, 1);
-    int status = git_apply_array(CMD("git", "apply", "--cached", "--reverse", "-"), &patches);
+    char *patch = create_patch_from_range(file, hunk, line_idx, line_idx, 0);
+    int status = git_apply(CMD("git", "apply", "--cached", "--reverse", "-"), patch);
     if (status != 0) ERROR("Unable to unstage the line.\n");
-    for (size_t i = 0; i < patches.length; i++) free(patches.data[i]);
-    VECTOR_FREE(&patches);
+    free(patch);
 }
 
 void git_stage_range(const File *file, const Hunk *hunk, int range_start, int range_end) {
-    str_vec patches = create_patch_from_range(file, hunk, range_start, range_end, 0);
-    int status = git_apply_array(CMD("git", "apply", "--cached", "-"), &patches);
+    char *patch = create_patch_from_range(file, hunk, range_start, range_end, 0);
+    int status = git_apply(CMD("git", "apply", "--cached", "-"), patch);
     if (status != 0) ERROR("Unable to stage the range.\n");
-    for (size_t i = 0; i < patches.length; i++) free(patches.data[i]);
-    VECTOR_FREE(&patches);
+    free(patch);
 }
 
 void git_unstage_range(const File *file, const Hunk *hunk, int range_start, int range_end) {
-    str_vec patches = create_patch_from_range(file, hunk, range_start, range_end, 1);
-    int status = git_apply_array(CMD("git", "apply", "--cached", "--reverse", "-"), &patches);
+    char *patch = create_patch_from_range(file, hunk, range_start, range_end, 0);
+    int status = git_apply(CMD("git", "apply", "--cached", "--reverse", "-"), patch);
     if (status != 0) ERROR("Unable to unstage the range.\n");
-    for (size_t i = 0; i < patches.length; i++) free(patches.data[i]);
-    VECTOR_FREE(&patches);
+    free(patch);
 }
