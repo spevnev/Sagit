@@ -78,13 +78,8 @@ int main(int argc, char **argv) {
             mouse = mouse_event.bstate;
         }
 
-        if (ch == 'q' || ch == KEY_ESCAPE) {
-            running = 0;
-            break;
-        }
-
         if (show_help) {
-            if (ch == 'h') {
+            if (ch == 'q' || ch == KEY_ESCAPE || ch == 'h') {
                 show_help = 0;
                 scroll = saved_scroll;
                 curs_set(1);
@@ -94,7 +89,9 @@ int main(int argc, char **argv) {
                 if (scroll > 0) scroll--;
             }
         } else {
-            if (ch == 'h') {
+            if (ch == 'q' || ch == KEY_ESCAPE) {
+                running = 0;
+            } else if (ch == 'h') {
                 show_help = 1;
                 saved_scroll = scroll;
                 scroll = 0;

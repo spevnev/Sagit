@@ -227,7 +227,7 @@ int invoke_action(size_t y, int ch, int selection) {
 // clang-format off
 static const char *help_lines[] = {
     "Keybindings:"                                                             ,
-    "q, esc  - quit"                                                           ,
+    "q, esc  - quit, close help"                                               ,
     "h       - open/close (this) help"                                         ,
     "j, down - next line"                                                      ,
     "k, up   - previous line"                                                  ,
