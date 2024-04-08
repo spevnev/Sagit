@@ -135,7 +135,7 @@ static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
     return patch;
 }
 
-static char *create_patch_from_range(const File *file, const Hunk *hunk, int range_start, int range_end, char reverse) {
+static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, char reverse) {
     // Because we are staging only a single hunk it should start at the same position as the original file
     int ignore, start, old_length, new_length;
     int matched = sscanf(hunk->header, hunk_diff_header, &start, &old_length, &ignore, &new_length);
@@ -193,11 +193,11 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, int ran
 }
 
 int is_git_initialized(void) {
-    int status;
-    char *output = git_exec(&status, CMD("git", "status"));
+    int exit_code;
+    char *output = git_exec(&exit_code, CMD("git", "status"));
     free(output);
 
-    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    return WIFEXITED(exit_code) && WEXITSTATUS(exit_code) == 0;
 }
 
 void get_git_state(State *state) {
@@ -244,15 +244,9 @@ void update_git_state(State *state) {
     state->staged.raw = staged_raw;
 }
 
-void git_stage_file(char *file_path) {
-    char *output = git_exec(NULL, CMD("git", "add", file_path));
-    free(output);
-}
+void git_stage_file(char *file_path) { git_exec(NULL, CMD("git", "add", file_path)); }
 
-void git_unstage_file(char *file_path) {
-    char *output = git_exec(NULL, CMD("git", "restore", "--staged", file_path));
-    free(output);
-}
+void git_unstage_file(char *file_path) { git_exec(NULL, CMD("git", "restore", "--staged", file_path)); }
 
 void git_stage_hunk(const File *file, const Hunk *hunk) {
     char *patch = create_patch_from_hunk(file, hunk);
@@ -276,7 +270,7 @@ void git_stage_line(const File *file, const Hunk *hunk, int line_idx) {
 }
 
 void git_unstage_line(const File *file, const Hunk *hunk, int line_idx) {
-    char *patch = create_patch_from_range(file, hunk, line_idx, line_idx, 0);
+    char *patch = create_patch_from_range(file, hunk, line_idx, line_idx, 1);
     int status = git_apply(CMD("git", "apply", "--cached", "--reverse", "-"), patch);
     if (status != 0) ERROR("Unable to unstage the line.\n");
     free(patch);
@@ -290,7 +284,7 @@ void git_stage_range(const File *file, const Hunk *hunk, int range_start, int ra
 }
 
 void git_unstage_range(const File *file, const Hunk *hunk, int range_start, int range_end) {
-    char *patch = create_patch_from_range(file, hunk, range_start, range_end, 0);
+    char *patch = create_patch_from_range(file, hunk, range_start, range_end, 1);
     int status = git_apply(CMD("git", "apply", "--cached", "--reverse", "-"), patch);
     if (status != 0) ERROR("Unable to unstage the range.\n");
     free(patch);

@@ -3,11 +3,14 @@
 
 #define CMD(...) ((char *const[]){__VA_ARGS__, NULL})
 
-// If `status` is not null, writes child exit code, otherwise if child fails it exit(1)-s.
-// Returns malloc()-ed stdout and stderr output (must be freed by the caller).
-char *git_exec(int *status, char *const *args);
+// Runs git `args` and returns child's exit code.
+int git_exec_without_output(char *const *args);
 
-// Runs git `args` and writes `patch` to its standard input.
+// Runs git `args` nad returns malloc()-ed merged stdout and stderr to `output`.
+// If `exit_code` is not null, writes child's exit code to it.
+char *git_exec(int *exit_code, char *const *args);
+
+// Runs git `args`, writes `patch` to its standard input.
 // Returns child's exit code.
 int git_apply(char *const *args, const char *patch);
 

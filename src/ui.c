@@ -196,10 +196,10 @@ void render(State *state) {
     }
 }
 
-void output(size_t scroll, int selection_start, int selection_end) {
+void output(int scroll, int selection_start, int selection_end) {
     for (int i = 0; i < getmaxy(stdscr); i++) {
         int y = scroll + i;
-        if (y >= lines.length) break;
+        if ((size_t) y >= lines.length) break;
 
         char is_selected = y >= selection_start && y <= selection_end;
         int selected_style = is_selected ? A_REVERSE : 0;
@@ -212,7 +212,7 @@ void output(size_t scroll, int selection_start, int selection_end) {
     }
 }
 
-int invoke_action(size_t y, int ch, int selection) {
+int invoke_action(int y, int ch, int selection) {
     ActionArgs args = {ch, -1, -1};
     if (selection != -1) {
         args.range_start = MIN(selection, y);
@@ -248,7 +248,7 @@ static const char *help_lines[] = {
 };
 // clang-format on
 
-void output_help(size_t scroll) {
+void output_help(int scroll) {
     for (int i = 0; i < getmaxy(stdscr); i++) {
         if (scroll + i >= get_help_length()) break;
         printw("%s\n", help_lines[scroll + i]);
@@ -256,10 +256,10 @@ void output_help(size_t scroll) {
 }
 
 int get_screen_height(void) { return getmaxy(stdscr); }
-size_t get_lines_length(void) { return lines.length; }
-size_t get_help_length(void) { return sizeof(help_lines) / sizeof(help_lines[0]); }
+int get_lines_length(void) { return lines.length; }
+int get_help_length(void) { return sizeof(help_lines) / sizeof(help_lines[0]); }
 char is_line(int y) {
     // TODO: find a proper way...
-    if (y >= lines.length) return 0;
+    if ((size_t) y >= lines.length) return 0;
     return lines.data[y].action == &unstaged_line_action || lines.data[y].action == &staged_line_action;
 }
