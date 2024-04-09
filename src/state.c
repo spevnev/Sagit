@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "vector.h"
 
-static void free_files(FileVec *files) {
+void free_files(FileVec *files) {
     assert(files != NULL);
 
     for (size_t i = 0; i < files->length; i++) {

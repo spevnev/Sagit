@@ -227,7 +227,7 @@ void update_git_state(State *state) {
     char *unstaged_raw = git_exec(NULL, CMD("git", "diff"));
     FileVec unstaged_files = parse_diff(unstaged_raw);
     merge_files(&state->unstaged.files, &unstaged_files);
-    VECTOR_FREE(&state->unstaged.files);
+    free_files(&state->unstaged.files);
     free(state->unstaged.raw);
     state->unstaged.files = unstaged_files;
     state->unstaged.raw = unstaged_raw;
@@ -235,15 +235,15 @@ void update_git_state(State *state) {
     char *staged_raw = git_exec(NULL, CMD("git", "diff", "--staged"));
     FileVec staged_files = parse_diff(staged_raw);
     merge_files(&state->staged.files, &staged_files);
-    VECTOR_FREE(&state->staged.files);
+    free_files(&state->staged.files);
     free(state->staged.raw);
     state->staged.files = staged_files;
     state->staged.raw = staged_raw;
 }
 
-void git_stage_file(char *file_path) { git_exec(NULL, CMD("git", "add", file_path)); }
+void git_stage_file(char *file_path) { git_exec_without_output(CMD("git", "add", file_path)); }
 
-void git_unstage_file(char *file_path) { git_exec(NULL, CMD("git", "restore", "--staged", file_path)); }
+void git_unstage_file(char *file_path) { git_exec_without_output(CMD("git", "restore", "--staged", file_path)); }
 
 void git_stage_hunk(const File *file, const Hunk *hunk) {
     char *patch = create_patch_from_hunk(file, hunk);
