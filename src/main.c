@@ -12,6 +12,9 @@
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 
+#define MIN_WIDTH 80
+#define MIN_HEIGHT 10
+
 static char running = 1;
 static State state = {0};
 
@@ -52,6 +55,16 @@ int main(int argc, char **argv) {
     int cursor = 0;
     int selection = -1;
     while (running) {
+        if (getmaxx(stdscr) < MIN_WIDTH || getmaxy(stdscr) < MIN_HEIGHT) {
+            clear();
+            printw("Screen is too small! Make sure it is at least %dx%d.\n", MIN_WIDTH, MIN_HEIGHT);
+            printw("Press q key to exit.\n");
+
+            int ch = getch();
+            if (ch == 'q') running = 0;
+            continue;
+        }
+
         int y = scroll + cursor;
 
         clear();
