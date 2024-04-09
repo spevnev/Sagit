@@ -34,37 +34,32 @@ static LineVec lines = {0};
 #define ADD_LINE(action, arg, style, ...)                    \
     do {                                                     \
         size_t size = snprintf(NULL, 0, __VA_ARGS__) + 1;    \
-        char *str = (char *) ctxt_alloc(&ctxt, size + 1);    \
+        char *str = (char *) ctxt_alloc(&ctxt, size);        \
         if (str == NULL) ERROR("Process is out of memory."); \
         snprintf(str, size, __VA_ARGS__);                    \
-        str[size - 1] = '\n';                                \
-        str[size] = '\0';                                    \
         Line line = {str, action, arg, style};               \
         VECTOR_PUSH(&lines, line);                           \
     } while (0)
 
 #define EMPTY_LINE()                                         \
     do {                                                     \
-        char *str = (char *) ctxt_alloc(&ctxt, 2);           \
+        char *str = (char *) ctxt_alloc(&ctxt, 1);           \
         if (str == NULL) ERROR("Process is out of memory."); \
-        str[0] = '\n';                                       \
-        str[1] = '\0';                                       \
+        str[0] = '\0';                                       \
         Line line = {str, NULL, NULL, 0};                    \
         VECTOR_PUSH(&lines, line);                           \
     } while (0)
 
-#define APPEND_LINE(...)                                                   \
-    do {                                                                   \
-        assert(lines.length > 0);                                          \
-        Line *line = &lines.data[lines.length - 1];                        \
-        size_t old_size = strlen(line->str) - 1;                           \
-        size_t add_size = snprintf(NULL, 0, __VA_ARGS__) + 1;              \
-        size_t new_size = old_size + add_size;                             \
-        line->str = (char *) ctxt_realloc(&ctxt, line->str, new_size + 1); \
-        if (line->str == NULL) ERROR("Process is out of memory.");         \
-        snprintf(line->str + old_size, add_size, __VA_ARGS__);             \
-        line->str[new_size - 1] = '\n';                                    \
-        line->str[new_size] = '\0';                                        \
+#define APPEND_LINE(...)                                               \
+    do {                                                               \
+        assert(lines.length > 0);                                      \
+        Line *line = &lines.data[lines.length - 1];                    \
+        size_t old_size = strlen(line->str);                           \
+        size_t add_size = snprintf(NULL, 0, __VA_ARGS__) + 1;          \
+        size_t new_size = old_size + add_size;                         \
+        line->str = (char *) ctxt_realloc(&ctxt, line->str, new_size); \
+        if (line->str == NULL) ERROR("Process is out of memory.");     \
+        snprintf(line->str + old_size, add_size, __VA_ARGS__);         \
     } while (0)
 
 static int section_style = 0;
@@ -209,7 +204,7 @@ void output(int scroll, int selection_start, int selection_end) {
         bkgdset(line.style);
         attron(line.style | selected_style);
         clrtoeol();
-        printw("%s", line.str);
+        printw("%s\n", line.str);
         bkgdset(0);
         attrset(0);
     }
