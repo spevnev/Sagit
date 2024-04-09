@@ -95,9 +95,9 @@ int main(int argc, char **argv) {
                 show_help = 0;
                 scroll = saved_scroll;
                 curs_set(1);
-            } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_DOWN) {
+            } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_SCROLL_DOWN) {
                 if (scroll + get_screen_height() < get_help_length()) scroll++;
-            } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_UP) {
+            } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_SCROLL_UP) {
                 if (scroll > 0) scroll--;
             }
         } else {
@@ -108,19 +108,19 @@ int main(int argc, char **argv) {
                 saved_scroll = scroll;
                 scroll = 0;
                 curs_set(0);
-            } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_DOWN) {
+            } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_SCROLL_DOWN) {
                 int height = get_screen_height();
                 if (cursor < height - 1) cursor++;
                 else if (scroll + height < get_lines_length()) scroll++;
 
                 if (!is_line(scroll + cursor)) selection = -1;
-            } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_UP) {
+            } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_SCROLL_UP) {
                 if (cursor > 0) cursor--;
                 else if (scroll > 0) scroll--;
 
                 if (!is_line(scroll + cursor)) selection = -1;
             } else {
-                int result = invoke_action(y, ch, selection);
+                int result = invoke_action(y, ch, selection_start, selection_end);
                 if (result & AC_UPDATE_STATE) update_git_state(&state);
                 if (result & AC_RERENDER) render(&state);
                 if (result & AC_TOGGLE_SELECTION) {

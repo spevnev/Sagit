@@ -12,11 +12,6 @@
 #include "state.h"
 #include "vector.h"
 
-#define COLOR_DEFAULT -1
-
-#define MIN(a, b) ((a) <= (b) ? (a) : (b))
-#define MAX(a, b) ((a) >= (b) ? (a) : (b))
-
 typedef struct {
     char *str;
     action_t *action;
@@ -68,8 +63,6 @@ static int hunk_style = 0;
 static int line_style = 0;
 static int add_line_style = 0;
 static int del_line_style = 0;
-
-#define BRIGHT(color) (COLORS > 15 ? (color + 8) : color)
 
 static void init_styles(void) {
     short pair_num = 0;
@@ -148,7 +141,7 @@ void ui_init(void) {
     noecho();
     set_escdelay(0);
     keypad(stdscr, true);
-    mousemask(MOUSE_UP | MOUSE_DOWN, NULL);
+    mousemask(MOUSE_SCROLL_UP | MOUSE_SCROLL_DOWN, NULL);
 
     start_color();
     use_default_colors();

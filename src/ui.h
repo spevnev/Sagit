@@ -4,9 +4,11 @@
 #include <stdlib.h>
 #include "state.h"
 
-#define MOUSE_UP 1 << 19
-#define MOUSE_DOWN 1 << 27
-
+// Missing ncurses definitions:
+#define COLOR_DEFAULT -1
+#define BRIGHT(color) (COLORS > 15 ? (color + 8) : color)
+#define MOUSE_SCROLL_UP 1 << 19
+#define MOUSE_SCROLL_DOWN 1 << 27
 #define KEY_ESCAPE 27
 
 void ui_init(void);
