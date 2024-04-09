@@ -12,6 +12,8 @@
 #include "state.h"
 #include "vector.h"
 
+#define COLOR_DEFAULT -1
+
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 
@@ -77,22 +79,23 @@ static int del_line_style = 0;
 static void init_styles(void) {
     short pair_num = 0;
 
-    init_pair(++pair_num, COLOR_WHITE, 0);
+    init_pair(++pair_num, COLOR_WHITE, COLOR_DEFAULT);
     section_style = COLOR_PAIR(pair_num) | A_BOLD;
 
-    init_pair(++pair_num, COLOR_WHITE, 0);
+    init_pair(++pair_num, COLOR_WHITE, COLOR_DEFAULT);
     file_style = COLOR_PAIR(pair_num) | A_ITALIC;
 
-    init_pair(++pair_num, BRIGHT(COLOR_CYAN), 0);
+    init_pair(++pair_num, BRIGHT(COLOR_CYAN), COLOR_DEFAULT);
     hunk_style = COLOR_PAIR(pair_num);
 
-    init_pair(++pair_num, BRIGHT(COLOR_WHITE), 0);
+    short line_bg = COLOR_BLACK;
+    init_pair(++pair_num, BRIGHT(COLOR_WHITE), line_bg);
     line_style = COLOR_PAIR(pair_num);
 
-    init_pair(++pair_num, BRIGHT(COLOR_GREEN), 0);
+    init_pair(++pair_num, BRIGHT(COLOR_GREEN), line_bg);
     add_line_style = COLOR_PAIR(pair_num);
 
-    init_pair(++pair_num, BRIGHT(COLOR_RED), 0);
+    init_pair(++pair_num, BRIGHT(COLOR_RED), line_bg);
     del_line_style = COLOR_PAIR(pair_num);
 }
 
@@ -153,6 +156,7 @@ void ui_init(void) {
     mousemask(MOUSE_UP | MOUSE_DOWN, NULL);
 
     start_color();
+    use_default_colors();
     init_styles();
 }
 
@@ -202,10 +206,12 @@ void output(int scroll, int selection_start, int selection_end) {
         int selected_style = is_selected ? A_REVERSE : 0;
 
         Line line = lines.data[scroll + i];
+        bkgdset(line.style);
         attron(line.style | selected_style);
+        clrtoeol();
         printw("%s", line.str);
-        // TODO: fill the rest of the line
-        attroff(line.style | selected_style);  // TODO: do not turn off? or completely reset?
+        bkgdset(0);
+        attrset(0);
     }
 }
 
