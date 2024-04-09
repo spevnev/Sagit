@@ -10,7 +10,7 @@
 
 #define NO_GIT_BINARY 100  // exit code for forked process
 
-int git_exec_without_output(char *const *args) {
+int gexec(char *const *args) {
     assert(args != NULL);
 
     pid_t pid = fork();
@@ -25,7 +25,7 @@ int git_exec_without_output(char *const *args) {
     return exit_code;
 }
 
-char *git_exec(int *output_exit_code, char *const *args) {
+char *gexecr(int *output_exit_code, char *const *args) {
     assert(args != NULL);
 
     int pipe_fds[2];
@@ -80,7 +80,7 @@ char *git_exec(int *output_exit_code, char *const *args) {
     return buffer;
 }
 
-int git_apply(char *const *args, const char *patch) {
+int gexecw(char *const *args, const char *patch) {
     assert(args != NULL && patch != NULL);
 
     int pipe_fds[2];
