@@ -66,18 +66,17 @@ int main(int argc, char **argv) {
         }
 
         int y = scroll + cursor;
+        int selection_start = -1;
+        int selection_end = -1;
+        if (selection != -1) {
+            selection_start = MIN(selection, y);
+            selection_end = MAX(selection, y);
+        }
 
         clear();
         if (show_help) {
             output_help(scroll);
         } else {
-            int selection_start = -1;
-            int selection_end = -1;
-            if (selection != -1) {
-                selection_start = MIN(selection, y);
-                selection_end = MAX(selection, y);
-            }
-
             output(scroll, selection_start, selection_end);
             move(cursor, 0);
         }

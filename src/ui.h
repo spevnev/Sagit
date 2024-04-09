@@ -17,7 +17,7 @@ void render(State *state);
 // Outputs the buffer
 void output(int scroll, int selection_start, int selection_end);
 // Calls action associated with `ch` on element at position `y`
-int invoke_action(int y, int ch, int selection);
+int invoke_action(int y, int ch, int range_start, int range_end);
 void output_help(int scroll);
 
 int get_screen_height(void);

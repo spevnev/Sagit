@@ -210,13 +210,8 @@ void output(int scroll, int selection_start, int selection_end) {
     }
 }
 
-int invoke_action(int y, int ch, int selection) {
-    ActionArgs args = {ch, -1, -1};
-    if (selection != -1) {
-        args.range_start = MIN(selection, y);
-        args.range_end = MAX(selection, y);
-    }
-
+int invoke_action(int y, int ch, int range_start, int range_end) {
+    ActionArgs args = {ch, range_start, range_end};
     action_t *action = lines.data[y].action;
     if (action != NULL) return action(lines.data[y].action_arg, &args);
     return 0;
