@@ -106,7 +106,7 @@ static void render_files(FileVec *files, char staged) {
         if (file->is_folded) continue;
 
         for (size_t i = 0; i < file->hunks.length; i++) {
-            int hunk_y = lines.length;
+            int hunk_y = lines.length + 1;
             Hunk *hunk = &file->hunks.data[i];
             HunkArgs *args = (HunkArgs *) ctxt_alloc(&ctxt, sizeof(HunkArgs));
             args->file = file;
