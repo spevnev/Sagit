@@ -2,7 +2,7 @@ INSTALL := ginstall
 CC      := gcc
 
 CFLAGS  := -O2 -std=c17 -Wall -Wextra -pedantic -Isrc -MMD -MP
-LDFLAGS := -ltinfow -lncursesw
+LDFLAGS := $(shell pkg-config --libs ncursesw)
 
 ifeq ($(DEBUG),1)
 	CFLAGS += -g3 -fstack-protector -fsanitize=address,leak,undefined -DDEBUG

@@ -4,7 +4,7 @@ Sagit is a small CLI utility which aims to make `git add` more flexible by allow
 
 ## Building and Installing
 
-Requirements: C compiler, ncursesw
+Requirements: C compiler, ncursesw, pkg-config
 
 Build with `make` and install with `make install`.
 
