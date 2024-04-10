@@ -2,7 +2,7 @@ INSTALL := ginstall
 CC      := gcc
 
 CFLAGS  := -O2 -std=c17 -Wall -Wextra -pedantic -Isrc -MMD -MP
-LDFLAGS := -l:libncursesw.so.5 -l:libtinfo.so.5
+LDFLAGS := -ltinfow -lncursesw
 
 ifeq ($(DEBUG),1)
 	CFLAGS += -g3 -fstack-protector -fsanitize=address,leak,undefined -DDEBUG
