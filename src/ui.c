@@ -244,7 +244,7 @@ void output_help(int scroll) {
 int get_screen_height(void) { return getmaxy(stdscr); }
 int get_lines_length(void) { return lines.length; }
 int get_help_length(void) { return sizeof(help_lines) / sizeof(help_lines[0]); }
-char is_line(int y) {
+int is_line(int y) {
     // TODO: find a proper way...
     if ((size_t) y >= lines.length) return 0;
     return lines.data[y].action == &unstaged_line_action || lines.data[y].action == &staged_line_action;

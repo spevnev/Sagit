@@ -25,6 +25,6 @@ void output_help(int scroll);
 int get_screen_height(void);
 int get_lines_length(void);
 int get_help_length(void);
-char is_line(int y);
+int is_line(int y);
 
 #endif  // UI_H

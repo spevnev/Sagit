@@ -4,7 +4,7 @@
 #include "vector.h"
 
 typedef struct {
-    char is_folded;
+    int is_folded;
     char *header;
     str_vec lines;
 } Hunk;
@@ -14,7 +14,7 @@ DEFINE_VECTOR_TYPE(HunkVec, Hunk);
 enum FileChangeType { FC_CREATED, FC_DELETED, FC_MODIFIED, FC_RENAMED };
 
 typedef struct {
-    char is_folded;
+    int is_folded;
     char change_type;
     char *src;
     char *dest;
@@ -25,24 +25,24 @@ DEFINE_VECTOR_TYPE(FileVec, File);
 
 // NOTE: Actual sections (from State) must have the same layout
 typedef struct {
-    char is_folded;
+    int is_folded;
 } Section;
 
 typedef struct {
     struct {
-        char is_folded;
+        int is_folded;
 
         char *raw;
         str_vec files;
     } untracked;
     struct {
-        char is_folded;
+        int is_folded;
 
         char *raw;
         FileVec files;
     } unstaged;
     struct {
-        char is_folded;
+        int is_folded;
 
         char *raw;
         FileVec files;

@@ -15,7 +15,7 @@
 #define MIN_WIDTH 80
 #define MIN_HEIGHT 10
 
-static char running = 1;
+static int running = 1;
 static State state = {0};
 
 static void cleanup(void) {
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     atexit(cleanup);
     render(&state);
 
-    char show_help = 0;
+    int show_help = 0;
     int saved_scroll = 0;
     int scroll = 0;
     int cursor = 0;

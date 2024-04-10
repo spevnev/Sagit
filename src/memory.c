@@ -21,11 +21,11 @@ static MemoryRegion *new_region(size_t size) {
 static MemoryRegion *ctxt_new_region(MemoryContext *ctxt, size_t min_size) {
     assert(ctxt != NULL);
 
-    size_t size = MAX(ctxt->end->capacity, min_size) * REGION_SIZE_MULTIPLIER;
+    size_t size = MAX(ctxt->head->capacity, min_size) * REGION_SIZE_MULTIPLIER;
     MemoryRegion *region = new_region(size);
 
-    ctxt->end->next = region;
-    ctxt->end = region;
+    ctxt->head->next = region;
+    ctxt->head = region;
     return region;
 }
 
@@ -33,14 +33,14 @@ void ctxt_init(MemoryContext *ctxt) {
     assert(ctxt != NULL);
 
     MemoryRegion *region = new_region(INITIAL_REGION_SIZE);
-    ctxt->begin = region;
-    ctxt->end = region;
+    ctxt->tail = region;
+    ctxt->head = region;
 }
 
 void ctxt_reset(MemoryContext *ctxt) {
     assert(ctxt != NULL);
 
-    for (MemoryRegion *current = ctxt->begin, *next = NULL; current != NULL; current = next) {
+    for (MemoryRegion *current = ctxt->tail, *next = NULL; current != NULL; current = next) {
         next = current->next;
         current->used = 0;
     }
@@ -49,7 +49,7 @@ void ctxt_reset(MemoryContext *ctxt) {
 void ctxt_free(MemoryContext *ctxt) {
     assert(ctxt != NULL);
 
-    for (MemoryRegion *current = ctxt->begin, *next = NULL; current != NULL; current = next) {
+    for (MemoryRegion *current = ctxt->tail, *next = NULL; current != NULL; current = next) {
         next = current->next;
         free(current);
     }
@@ -61,7 +61,7 @@ void *ctxt_alloc(MemoryContext *ctxt, size_t requested_size) {
     // size_t is used to store allocation size and void* to align allocation
     size_t size = requested_size + sizeof(size_t) + sizeof(void *);
 
-    MemoryRegion *current = ctxt->begin;
+    MemoryRegion *current = ctxt->tail;
     for (MemoryRegion *next = NULL; current != NULL; current = next) {
         next = current->next;
         if (current->used + size <= current->capacity) break;

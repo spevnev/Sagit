@@ -11,8 +11,8 @@ typedef struct _MemoryRegion {
 } MemoryRegion;
 
 typedef struct {
-    MemoryRegion *begin;
-    MemoryRegion *end;
+    MemoryRegion *tail;
+    MemoryRegion *head;
 } MemoryContext;
 
 void ctxt_init(MemoryContext *ctxt);
