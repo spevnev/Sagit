@@ -87,7 +87,7 @@ static void init_styles(void) {
     del_line_style = COLOR_PAIR(pair_num);
 }
 
-static void render_files(FileVec *files, char staged) {
+static void render_files(const FileVec *files, char staged) {
     assert(files != NULL);
     action_t *file_action = staged ? &staged_file_action : &unstaged_file_action;
     action_t *hunk_action = staged ? &staged_hunk_action : &unstaged_hunk_action;

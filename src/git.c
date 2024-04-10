@@ -82,14 +82,14 @@ static void merge_files(const FileVec *old_files, FileVec *new_files) {
         File *new_file = &new_files->data[i];
 
         for (size_t j = 0; j < old_files->length; j++) {
-            File *old_file = &old_files->data[j];
+            const File *old_file = &old_files->data[j];
             if (strcmp(old_file->src, new_file->src) != 0) continue;
 
             for (size_t k = 0; k < new_file->hunks.length; k++) {
                 Hunk *new_hunk = &new_file->hunks.data[k];
 
                 for (size_t h = 0; h < old_file->hunks.length; h++) {
-                    Hunk *old_hunk = &old_file->hunks.data[h];
+                    const Hunk *old_hunk = &old_file->hunks.data[h];
                     if (strcmp(old_file->src, new_file->src) != 0) continue;
 
                     new_hunk->is_folded = old_hunk->is_folded;
@@ -250,9 +250,9 @@ void update_git_state(State *state) {
     state->staged.raw = staged_raw;
 }
 
-void git_stage_file(char *file_path) { gexec(CMD("git", "add", file_path)); }
+void git_stage_file(const char *file_path) { gexec(CMD("git", "add", (char *) file_path)); }
 
-void git_unstage_file(char *file_path) { gexec(CMD("git", "restore", "--staged", file_path)); }
+void git_unstage_file(const char *file_path) { gexec(CMD("git", "restore", "--staged", (char *) file_path)); }
 
 void git_stage_hunk(const File *file, const Hunk *hunk) {
     char *patch = create_patch_from_hunk(file, hunk);

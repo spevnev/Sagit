@@ -4,7 +4,7 @@
 #include "git.h"
 #include "state.h"
 
-int section_action(void *_section, ActionArgs *args) {
+int section_action(void *_section, const ActionArgs *args) {
     Section *section = (Section *) _section;
 
     if (args->ch == ' ') {
@@ -15,7 +15,7 @@ int section_action(void *_section, ActionArgs *args) {
     return 0;
 }
 
-int untracked_file_action(void *_file_path, ActionArgs *args) {
+int untracked_file_action(void *_file_path, const ActionArgs *args) {
     char *file_path = (char *) _file_path;
 
     if (args->ch == 's') {
@@ -26,7 +26,7 @@ int untracked_file_action(void *_file_path, ActionArgs *args) {
     return 0;
 }
 
-int unstaged_file_action(void *_file, ActionArgs *args) {
+int unstaged_file_action(void *_file, const ActionArgs *args) {
     File *file = (File *) _file;
 
     if (args->ch == ' ') {
@@ -48,7 +48,7 @@ int unstaged_file_action(void *_file, ActionArgs *args) {
     return 0;
 }
 
-int staged_file_action(void *_file, ActionArgs *args) {
+int staged_file_action(void *_file, const ActionArgs *args) {
     File *file = (File *) _file;
 
     if (args->ch == ' ') {
@@ -70,7 +70,7 @@ int staged_file_action(void *_file, ActionArgs *args) {
     return 0;
 }
 
-int unstaged_hunk_action(void *_hunk_args, ActionArgs *args) {
+int unstaged_hunk_action(void *_hunk_args, const ActionArgs *args) {
     HunkArgs *hunk_args = (HunkArgs *) _hunk_args;
 
     if (args->ch == ' ') {
@@ -84,7 +84,7 @@ int unstaged_hunk_action(void *_hunk_args, ActionArgs *args) {
     return 0;
 }
 
-int staged_hunk_action(void *_hunk_args, ActionArgs *args) {
+int staged_hunk_action(void *_hunk_args, const ActionArgs *args) {
     HunkArgs *hunk_args = (HunkArgs *) _hunk_args;
 
     if (args->ch == ' ') {
@@ -98,7 +98,7 @@ int staged_hunk_action(void *_hunk_args, ActionArgs *args) {
     return 0;
 }
 
-int unstaged_line_action(void *_line_args, ActionArgs *args) {
+int unstaged_line_action(void *_line_args, const ActionArgs *args) {
     LineArgs *line_args = (LineArgs *) _line_args;
 
     if (args->ch == ' ') {
@@ -117,7 +117,7 @@ int unstaged_line_action(void *_line_args, ActionArgs *args) {
     return 0;
 }
 
-int staged_line_action(void *_line_args, ActionArgs *args) {
+int staged_line_action(void *_line_args, const ActionArgs *args) {
     LineArgs *line_args = (LineArgs *) _line_args;
 
     if (args->ch == ' ') {

@@ -5,7 +5,7 @@
 
 typedef struct {
     int is_folded;
-    char *header;
+    const char *header;
     str_vec lines;
 } Hunk;
 
@@ -16,8 +16,8 @@ enum FileChangeType { FC_CREATED, FC_DELETED, FC_MODIFIED, FC_RENAMED };
 typedef struct {
     int is_folded;
     char change_type;
-    char *src;
-    char *dest;
+    const char *src;
+    const char *dest;
     HunkVec hunks;
 } File;
 
