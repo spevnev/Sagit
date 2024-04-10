@@ -15,6 +15,8 @@
 #define MIN_WIDTH 80
 #define MIN_HEIGHT 10
 
+#define SCREEN_PADDING 2
+
 static int running = 1;
 static State state = {0};
 
@@ -66,6 +68,8 @@ int main(int argc, char **argv) {
         }
 
         int y = scroll + cursor;
+        int height = get_screen_height();
+
         int selection_start = -1;
         int selection_end = -1;
         if (selection != -1) {
@@ -96,7 +100,7 @@ int main(int argc, char **argv) {
                 scroll = saved_scroll;
                 curs_set(1);
             } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_SCROLL_DOWN) {
-                if (scroll + get_screen_height() < get_help_length()) scroll++;
+                if (scroll + height < get_help_length()) scroll++;
             } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_SCROLL_UP) {
                 if (scroll > 0) scroll--;
             }
@@ -109,17 +113,18 @@ int main(int argc, char **argv) {
                 scroll = 0;
                 curs_set(0);
             } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_SCROLL_DOWN) {
-                int height = get_screen_height();
-                if (cursor < height - 1) cursor++;
+                if (cursor < height - 1 - SCREEN_PADDING) cursor++;
                 else if (scroll + height < get_lines_length()) scroll++;
+                else if (cursor < height - 1) cursor++;
 
                 if (!is_line(scroll + cursor)) selection = -1;
             } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_SCROLL_UP) {
-                if (cursor > 0) cursor--;
+                if (cursor > SCREEN_PADDING) cursor--;
                 else if (scroll > 0) scroll--;
+                else if (cursor > 0) cursor--;
 
                 if (!is_line(scroll + cursor)) selection = -1;
-            } else {
+            } else if (y < get_lines_length()) {
                 int result = invoke_action(y, ch, selection_start, selection_end);
                 if (result & AC_UPDATE_STATE) update_git_state(&state);
                 if (result & AC_RERENDER) render(&state);
