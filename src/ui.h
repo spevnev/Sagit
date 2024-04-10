@@ -7,9 +7,15 @@
 // Missing ncurses definitions:
 #define COLOR_DEFAULT -1
 #define BRIGHT(color) (COLORS > 15 ? (color + 8) : color)
-#define MOUSE_SCROLL_UP 1 << 19
-#define MOUSE_SCROLL_DOWN 1 << 27
 #define KEY_ESCAPE 27
+
+#if NCURSES_MOUSE_VERSION > 1
+#    define MOUSE_SCROLL_DOWN BUTTON5_PRESSED
+#    define MOUSE_SCROLL_UP BUTTON4_PRESSED
+#else
+#    define MOUSE_SCROLL_DOWN 1 << 27
+#    define MOUSE_SCROLL_UP 1 << 19
+#endif
 
 void ui_init(void);
 void ui_cleanup(void);

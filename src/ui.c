@@ -135,13 +135,13 @@ void ui_init(void) {
     ctxt_init(&ctxt);
 
     setlocale(LC_ALL, "");
-    initscr();
 
+    if (initscr() == NULL) ERROR("Unable to initialize ncurses.");
     cbreak();
     noecho();
     set_escdelay(0);
     keypad(stdscr, true);
-    mousemask(MOUSE_SCROLL_UP | MOUSE_SCROLL_DOWN, NULL);
+    mousemask(MOUSE_SCROLL_DOWN | MOUSE_SCROLL_UP, NULL);
 
     start_color();
     use_default_colors();
