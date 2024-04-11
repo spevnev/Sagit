@@ -24,9 +24,9 @@ typedef struct {
 } LineArgs;
 
 // clang-format off
-static const int AC_RERENDER         = 1 << 0;
-static const int AC_UPDATE_STATE     = 1 << 1;
-static const int AC_TOGGLE_SELECTION = 1 << 2;
+#define AC_RERENDER         (1 << 0)
+#define AC_UPDATE_STATE     (1 << 1)
+#define AC_TOGGLE_SELECTION (1 << 2)
 // clang-format on
 
 int section_action(void *section, const ActionArgs *args);

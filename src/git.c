@@ -9,6 +9,15 @@
 #include "state.h"
 #include "vector.h"
 
+// clang-format off
+static char *const CMD_UNTRACKED[]     = {"git", "ls-files", "--others", "--exclude-standard"};
+static char *const CMD_UNSTAGED[]      = {"git", "diff"};
+static char *const CMD_STAGED[]        = {"git", "diff", "--staged"};
+
+static char *const CMD_APPLY[]         = {"git", "apply", "--cached", "-"};
+static char *const CMD_APPLY_REVERSE[] = {"git", "apply", "--cached", "--reverse", "-"};
+// clang-format on
+
 static const char *file_diff_header = "diff --git %s %s\n--- %s\n+++ %s\n";
 static const char *hunk_diff_header = "@@ -%d,%d +%d,%d @@\n";
 
@@ -209,13 +218,13 @@ int is_git_initialized(void) {
 void get_git_state(State *state) {
     assert(state != NULL);
 
-    state->untracked.raw = gexecr(NULL, CMD("git", "ls-files", "--others", "--exclude-standard"));
+    state->untracked.raw = gexecr(NULL, CMD_UNTRACKED);
     state->untracked.files = split(state->untracked.raw, '\n');
 
-    state->unstaged.raw = gexecr(NULL, CMD("git", "diff"));
+    state->unstaged.raw = gexecr(NULL, CMD_UNSTAGED);
     state->unstaged.files = parse_diff(state->unstaged.raw);
 
-    state->staged.raw = gexecr(NULL, CMD("git", "diff", "--staged"));
+    state->staged.raw = gexecr(NULL, CMD_STAGED);
     state->staged.files = parse_diff(state->staged.raw);
 }
 
@@ -230,10 +239,10 @@ void update_git_state(State *state) {
     assert(state->untracked.raw != NULL);
     VECTOR_FREE(&state->untracked.files);
     free(state->untracked.raw);
-    state->untracked.raw = gexecr(NULL, CMD("git", "ls-files", "--others", "--exclude-standard"));
+    state->untracked.raw = gexecr(NULL, CMD_UNTRACKED);
     state->untracked.files = split(state->untracked.raw, '\n');
 
-    char *unstaged_raw = gexecr(NULL, CMD("git", "diff"));
+    char *unstaged_raw = gexecr(NULL, CMD_UNSTAGED);
     FileVec unstaged_files = parse_diff(unstaged_raw);
     merge_files(&state->unstaged.files, &unstaged_files);
     free_files(&state->unstaged.files);
@@ -241,7 +250,7 @@ void update_git_state(State *state) {
     state->unstaged.files = unstaged_files;
     state->unstaged.raw = unstaged_raw;
 
-    char *staged_raw = gexecr(NULL, CMD("git", "diff", "--staged"));
+    char *staged_raw = gexecr(NULL, CMD_STAGED);
     FileVec staged_files = parse_diff(staged_raw);
     merge_files(&state->staged.files, &staged_files);
     free_files(&state->staged.files);
@@ -256,50 +265,40 @@ void git_unstage_file(const char *file_path) { gexec(CMD("git", "restore", "--st
 
 void git_stage_hunk(const File *file, const Hunk *hunk) {
     char *patch = create_patch_from_hunk(file, hunk);
-    int status = gexecw(CMD("git", "apply", "--cached", "-"), patch);
-    if (status != 0) ERROR("Unable to stage the hunk.\n");
+    if (gexecw(CMD_APPLY, patch) != 0) ERROR("Unable to stage the hunk.\n");
     free(patch);
 }
 
 void git_unstage_hunk(const File *file, const Hunk *hunk) {
     char *patch = create_patch_from_hunk(file, hunk);
-    int status = gexecw(CMD("git", "apply", "--cached", "--reverse", "-"), patch);
-    if (status != 0) ERROR("Unable to unstage the hunk.\n");
+    if (gexecw(CMD_APPLY_REVERSE, patch) != 0) ERROR("Unable to unstage the hunk.\n");
     free(patch);
 }
 
 void git_stage_line(const File *file, const Hunk *hunk, int line_idx) {
     char *patch = create_patch_from_range(file, hunk, line_idx, line_idx, 0);
     if (patch == NULL) return;
-
-    int status = gexecw(CMD("git", "apply", "--cached", "-"), patch);
-    if (status != 0) ERROR("Unable to stage the line.\n");
+    if (gexecw(CMD_APPLY, patch) != 0) ERROR("Unable to stage the line.\n");
     free(patch);
 }
 
 void git_unstage_line(const File *file, const Hunk *hunk, int line_idx) {
     char *patch = create_patch_from_range(file, hunk, line_idx, line_idx, 1);
     if (patch == NULL) return;
-
-    int status = gexecw(CMD("git", "apply", "--cached", "--reverse", "-"), patch);
-    if (status != 0) ERROR("Unable to unstage the line.\n");
+    if (gexecw(CMD_APPLY_REVERSE, patch) != 0) ERROR("Unable to unstage the line.\n");
     free(patch);
 }
 
 void git_stage_range(const File *file, const Hunk *hunk, int range_start, int range_end) {
     char *patch = create_patch_from_range(file, hunk, range_start, range_end, 0);
     if (patch == NULL) return;
-
-    int status = gexecw(CMD("git", "apply", "--cached", "-"), patch);
-    if (status != 0) ERROR("Unable to stage the range.\n");
+    if (gexecw(CMD_APPLY, patch) != 0) ERROR("Unable to stage the range.\n");
     free(patch);
 }
 
 void git_unstage_range(const File *file, const Hunk *hunk, int range_start, int range_end) {
     char *patch = create_patch_from_range(file, hunk, range_start, range_end, 1);
     if (patch == NULL) return;
-
-    int status = gexecw(CMD("git", "apply", "--cached", "--reverse", "-"), patch);
-    if (status != 0) ERROR("Unable to unstage the range.\n");
+    if (gexecw(CMD_APPLY_REVERSE, patch) != 0) ERROR("Unable to unstage the range.\n");
     free(patch);
 }

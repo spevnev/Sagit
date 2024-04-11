@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "error.h"
 
 #define INITIAL_REGION_SIZE 4096
 #define REGION_SIZE_MULTIPLIER 2
@@ -13,8 +14,11 @@ static MemoryRegion *new_region(size_t size) {
     assert(size > 0);
 
     MemoryRegion *region = (MemoryRegion *) malloc(sizeof(MemoryRegion) + size);
+    if (region == NULL) ERROR("Process is out of memory.");
+
     memset(region, 0, sizeof(MemoryRegion));
     region->capacity = size;
+
     return region;
 }
 
@@ -58,7 +62,7 @@ void ctxt_free(MemoryContext *ctxt) {
 void *ctxt_alloc(MemoryContext *ctxt, size_t requested_size) {
     assert(ctxt != NULL && requested_size != 0);
 
-    // size_t is used to store allocation size and void* to align allocation
+    // size_t is used to store allocation size and void* for alignment
     size_t size = requested_size + sizeof(size_t) + sizeof(void *);
 
     MemoryRegion *current = ctxt->tail;

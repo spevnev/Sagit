@@ -1,5 +1,4 @@
 #include "action.h"
-#include <string.h>
 #include "error.h"
 #include "git.h"
 #include "state.h"
