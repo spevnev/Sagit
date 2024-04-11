@@ -39,7 +39,7 @@ int unstaged_file_action(void *_file, const ActionArgs *args) {
         } else if (file->change_type == FC_RENAMED) {
             git_stage_file(file->src + 2);
             git_stage_file(file->dest + 2);
-        } else ERROR("Unkown file change type.");
+        } else ERROR("Unkown file change type.\n");
 
         return AC_RERENDER | AC_UPDATE_STATE;
     }
@@ -61,7 +61,7 @@ int staged_file_action(void *_file, const ActionArgs *args) {
         } else if (file->change_type == FC_RENAMED) {
             git_unstage_file(file->src + 2);
             git_unstage_file(file->dest + 2);
-        } else ERROR("Unkown file change type.");
+        } else ERROR("Unkown file change type.\n");
 
         return AC_RERENDER | AC_UPDATE_STATE;
     }

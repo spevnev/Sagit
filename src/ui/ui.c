@@ -26,23 +26,21 @@ static LineVec lines = {0};
 
 #define FOLD_CHAR(is_folded) ((is_folded) ? "▸" : "▾")
 
-#define ADD_LINE(action, arg, style, ...)                    \
-    do {                                                     \
-        size_t size = snprintf(NULL, 0, __VA_ARGS__) + 1;    \
-        char *str = (char *) ctxt_alloc(&ctxt, size);        \
-        if (str == NULL) ERROR("Process is out of memory."); \
-        snprintf(str, size, __VA_ARGS__);                    \
-        Line line = {str, action, arg, style};               \
-        VECTOR_PUSH(&lines, line);                           \
+#define ADD_LINE(action, arg, style, ...)                 \
+    do {                                                  \
+        size_t size = snprintf(NULL, 0, __VA_ARGS__) + 1; \
+        char *str = (char *) ctxt_alloc(&ctxt, size);     \
+        snprintf(str, size, __VA_ARGS__);                 \
+        Line line = {str, action, arg, style};            \
+        VECTOR_PUSH(&lines, line);                        \
     } while (0)
 
-#define EMPTY_LINE()                                         \
-    do {                                                     \
-        char *str = (char *) ctxt_alloc(&ctxt, 1);           \
-        if (str == NULL) ERROR("Process is out of memory."); \
-        str[0] = '\0';                                       \
-        Line line = {str, NULL, NULL, 0};                    \
-        VECTOR_PUSH(&lines, line);                           \
+#define EMPTY_LINE()                               \
+    do {                                           \
+        char *str = (char *) ctxt_alloc(&ctxt, 1); \
+        str[0] = '\0';                             \
+        Line line = {str, NULL, NULL, 0};          \
+        VECTOR_PUSH(&lines, line);                 \
     } while (0)
 
 #define APPEND_LINE(...)                                               \
@@ -53,7 +51,6 @@ static LineVec lines = {0};
         size_t add_size = snprintf(NULL, 0, __VA_ARGS__) + 1;          \
         size_t new_size = old_size + add_size;                         \
         line->str = (char *) ctxt_realloc(&ctxt, line->str, new_size); \
-        if (line->str == NULL) ERROR("Process is out of memory.");     \
         snprintf(line->str + old_size, add_size, __VA_ARGS__);         \
     } while (0)
 
@@ -101,7 +98,7 @@ static void render_files(const FileVec *files, char staged) {
         else if (file->change_type == FC_DELETED) APPEND_LINE("deleted %s", file->src + 2);
         else if (file->change_type == FC_CREATED) APPEND_LINE("created %s", file->dest + 2);
         else if (file->change_type == FC_RENAMED) APPEND_LINE("renamed %s -> %s", file->src + 2, file->dest + 2);
-        else ERROR("Unkown file change type.");
+        else ERROR("Unkown file change type.\n");
 
         if (file->is_folded) continue;
 
@@ -136,7 +133,7 @@ void ui_init(void) {
 
     setlocale(LC_ALL, "");
 
-    if (initscr() == NULL) ERROR("Unable to initialize ncurses.");
+    if (initscr() == NULL) ERROR("Unable to initialize ncurses.\n");
     cbreak();
     noecho();
     set_escdelay(0);
