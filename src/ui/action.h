@@ -1,7 +1,7 @@
 #ifndef ACTION_H
 #define ACTION_H
 
-#include "state.h"
+#include "git/state.h"
 
 typedef struct {
     int ch;

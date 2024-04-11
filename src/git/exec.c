@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "error.h"
+#include "utils/error.h"
 
 #define INITIAL_BUFFER_SIZE 1024
 

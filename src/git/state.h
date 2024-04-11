@@ -1,7 +1,7 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include "vector.h"
+#include "utils/vector.h"
 
 typedef struct {
     int is_folded;

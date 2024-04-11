@@ -1,7 +1,7 @@
-#include "action.h"
-#include "error.h"
-#include "git.h"
-#include "state.h"
+#include "ui/action.h"
+#include "git/git.h"
+#include "git/state.h"
+#include "utils/error.h"
 
 int section_action(void *_section, const ActionArgs *args) {
     Section *section = (Section *) _section;

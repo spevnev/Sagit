@@ -5,12 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "action.h"
-#include "error.h"
-#include "git.h"
-#include "memory.h"
-#include "state.h"
-#include "vector.h"
+#include "git/git.h"
+#include "git/state.h"
+#include "ui/action.h"
+#include "utils/error.h"
+#include "utils/memory.h"
+#include "utils/vector.h"
 
 typedef struct {
     char *str;
@@ -210,40 +210,8 @@ int invoke_action(int y, int ch, int range_start, int range_end) {
     return 0;
 }
 
-// clang-format off
-static const char *help_lines[] = {
-    "Keybindings:"                                                             ,
-    "q, esc  - quit, close help"                                               ,
-    "h       - open/close (this) help"                                         ,
-    "j, down - next line"                                                      ,
-    "k, up   - previous line"                                                  ,
-    "space   - on section, file, hunk: fold/unfold"                            ,
-    "          on line: start selecting a range"                               ,
-    "s       - stage untracked/unstaged change"                                ,
-    "u       - unstaged staged change"                                         ,
-    ""                                                                         ,
-    "(Un)Staging scopes:"                                                      ,
-    "Files and hunks by selecting their headers,"                              ,
-    "Lines and ranges within hunks."                                           ,
-    ""                                                                         ,
-    "Selecting a range:"                                                       ,
-    "Ranges must be selected within a single hunk!"                            ,
-    "To start selecting a range press space and then move cursor to select."   ,
-    "When it is selected, any action will be performed on the selected area."  ,
-    "To deselect, press space again or go out of hunk's scope."
-};
-// clang-format on
-
-void output_help(int scroll) {
-    for (int i = 0; i < getmaxy(stdscr); i++) {
-        if (scroll + i >= get_help_length()) break;
-        printw("%s\n", help_lines[scroll + i]);
-    }
-}
-
 int get_screen_height(void) { return getmaxy(stdscr); }
 int get_lines_length(void) { return lines.length; }
-int get_help_length(void) { return sizeof(help_lines) / sizeof(help_lines[0]); }
 int is_line(int y) {
     // TODO: find a proper way...
     if ((size_t) y >= lines.length) return 0;

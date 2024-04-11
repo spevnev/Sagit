@@ -2,7 +2,7 @@
 #define UI_H
 
 #include <stdlib.h>
-#include "state.h"
+#include "git/state.h"
 
 // Missing ncurses definitions:
 #define COLOR_DEFAULT -1
@@ -26,11 +26,9 @@ void render(State *state);
 void output(int scroll, int selection_start, int selection_end);
 // Calls action associated with `ch` on element at position `y`
 int invoke_action(int y, int ch, int range_start, int range_end);
-void output_help(int scroll);
 
 int get_screen_height(void);
 int get_lines_length(void);
-int get_help_length(void);
 int is_line(int y);
 
 #endif  // UI_H

@@ -3,11 +3,12 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "action.h"
-#include "error.h"
-#include "git.h"
-#include "state.h"
-#include "ui.h"
+#include "git/git.h"
+#include "git/state.h"
+#include "ui/action.h"
+#include "ui/help.h"
+#include "ui/ui.h"
+#include "utils/error.h"
 
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))

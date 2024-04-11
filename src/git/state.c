@@ -1,7 +1,7 @@
 #include "state.h"
 #include <assert.h>
 #include <stdlib.h>
-#include "vector.h"
+#include "utils/vector.h"
 
 void free_files(FileVec *files) {
     assert(files != NULL);

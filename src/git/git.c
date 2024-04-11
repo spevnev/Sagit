@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
-#include "error.h"
-#include "exec.h"
-#include "state.h"
-#include "vector.h"
+#include "git/exec.h"
+#include "git/state.h"
+#include "utils/error.h"
+#include "utils/vector.h"
 
 // clang-format off
 static char *const CMD_UNTRACKED[]     = {"git", "ls-files", "--others", "--exclude-standard"};

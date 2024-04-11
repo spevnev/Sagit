@@ -1,7 +1,7 @@
 #ifndef GIT_H
 #define GIT_H
 
-#include "state.h"
+#include "git/state.h"
 
 int is_git_initialized(void);
 
