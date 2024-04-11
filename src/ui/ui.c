@@ -138,6 +138,7 @@ void ui_init(void) {
     noecho();
     set_escdelay(0);
     keypad(stdscr, true);
+    nodelay(stdscr, true);
     mousemask(MOUSE_SCROLL_DOWN | MOUSE_SCROLL_UP, NULL);
 
     start_color();
