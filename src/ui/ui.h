@@ -1,6 +1,7 @@
 #ifndef UI_H
 #define UI_H
 
+#include <ncurses.h>
 #include <stdlib.h>
 #include "git/state.h"
 
