@@ -15,7 +15,7 @@
 #include "ui/ui.h"
 #include "utils/error.h"
 #ifdef __linux__
-#    include <sys/inotify.h>
+    #include <sys/inotify.h>
 #endif
 
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
