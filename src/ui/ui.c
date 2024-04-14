@@ -148,6 +148,7 @@ void ui_init(void) {
     start_color();
     use_default_colors();
     init_styles();
+    curs_set(0);
 }
 
 void ui_cleanup(void) {
@@ -187,21 +188,20 @@ void render(State *state) {
     }
 }
 
-void output(int scroll, int selection_start, int selection_end) {
+void output(int scroll, int cursor, int selection_start, int selection_end) {
     for (int i = 0; i < getmaxy(stdscr); i++) {
         int y = scroll + i;
         if ((size_t) y >= lines.length) break;
 
-        char is_selected = y >= selection_start && y <= selection_end;
+        char is_selected = i == cursor || (y >= selection_start && y <= selection_end);
         int selected_style = is_selected ? A_REVERSE : 0;
 
         Line line = lines.data[scroll + i];
         bkgdset(line.style);
         attron(line.style | selected_style);
-        clrtoeol();
         printw("%s\n", line.str);
-        bkgdset(0);
         attrset(0);
+        bkgdset(0);
     }
 }
 

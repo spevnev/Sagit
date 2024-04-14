@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
         if (show_help) {
             output_help(scroll);
         } else {
-            output(scroll, selection_start, selection_end);
+            output(scroll, cursor, selection_start, selection_end);
             move(cursor, 0);
         }
         refresh();
@@ -196,7 +196,6 @@ int main(int argc, char **argv) {
             if (ch == 'q' || ch == KEY_ESCAPE || ch == 'h') {
                 show_help = 0;
                 scroll = saved_scroll;
-                curs_set(1);
             } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_SCROLL_DOWN) {
                 if (scroll + height < get_help_length()) scroll++;
             } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_SCROLL_UP) {
@@ -209,7 +208,6 @@ int main(int argc, char **argv) {
                 show_help = 1;
                 saved_scroll = scroll;
                 scroll = 0;
-                curs_set(0);
             } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_SCROLL_DOWN) {
                 if (cursor < height - 1 - SCREEN_PADDING) cursor++;
                 else if (scroll + height < get_lines_length()) scroll++;
