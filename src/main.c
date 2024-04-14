@@ -7,7 +7,6 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/inotify.h>
 #include <unistd.h>
 #include "git/git.h"
 #include "git/state.h"
@@ -15,6 +14,9 @@
 #include "ui/help.h"
 #include "ui/ui.h"
 #include "utils/error.h"
+#ifdef __linux__
+#    include <sys/inotify.h>
+#endif
 
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
@@ -37,6 +39,7 @@ static void stop_running(int signal) {
     running = 0;
 }
 
+#ifdef __linux__
 // Recursively adds directory and its subdirectories to inotify.
 // NOTE: modifies path, which must fit longest possible path.
 static void watch_dirs_rec(int inotify_fd, char *path) {
@@ -62,6 +65,7 @@ static void watch_dirs_rec(int inotify_fd, char *path) {
 
     closedir(dir);
 }
+#endif
 
 int main(int argc, char **argv) {
     if (argc > 1) {
@@ -80,11 +84,13 @@ int main(int argc, char **argv) {
     action.sa_handler = stop_running;
     sigaction(SIGINT, &action, NULL);
 
+#ifdef __linux__
     int inotify_fd = inotify_init1(IN_NONBLOCK);
     char path_buffer[4096] = ".";
     watch_dirs_rec(inotify_fd, path_buffer);
 
     struct pollfd poll_fds[2] = {{STDIN_FILENO, POLLIN, 0}, {inotify_fd, POLLIN, 0}};
+#endif
 
     ui_init();
     atexit(cleanup);
@@ -128,6 +134,7 @@ int main(int argc, char **argv) {
         }
         refresh();
 
+#ifdef __linux__
         int events = poll(poll_fds, 2, -1);
         if (events == -1) {
             if (errno == EINTR) continue;
@@ -173,6 +180,9 @@ int main(int argc, char **argv) {
         }
 
         if ((poll_fds[0].revents & POLLIN) == 0) continue;
+#else
+        (void) ignore_inotify;
+#endif
 
         int ch = getch();
         int mouse = 0;
@@ -227,7 +237,9 @@ int main(int argc, char **argv) {
         }
     }
 
+#ifdef __linux__
     close(inotify_fd);
+#endif
 
     return EXIT_SUCCESS;
 }
