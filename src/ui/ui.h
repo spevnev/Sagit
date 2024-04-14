@@ -30,6 +30,6 @@ int invoke_action(int y, int ch, int range_start, int range_end);
 
 int get_screen_height(void);
 int get_lines_length(void);
-int is_line(int y);
+int is_selectable(int y);
 
 #endif  // UI_H

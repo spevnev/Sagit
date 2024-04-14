@@ -213,20 +213,20 @@ int main(int argc, char **argv) {
                 else if (scroll + height < get_lines_length()) scroll++;
                 else if (cursor < height - 1) cursor++;
 
-                if (!is_line(scroll + cursor)) selection = -1;
+                if (!is_selectable(scroll + cursor)) selection = -1;
             } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_SCROLL_UP) {
                 if (cursor > SCREEN_PADDING) cursor--;
                 else if (scroll > 0) scroll--;
                 else if (cursor > 0) cursor--;
 
-                if (!is_line(scroll + cursor)) selection = -1;
+                if (!is_selectable(scroll + cursor)) selection = -1;
             } else if (y < get_lines_length()) {
                 int result = invoke_action(y, ch, selection_start, selection_end);
                 if (result & AC_UPDATE_STATE) {
                     ignore_inotify = 1;
                     update_git_state(&state);
                 }
-                if (result & AC_RERENDER) render(&state);
+                if ((result & AC_RERENDER) || (result & AC_UPDATE_STATE)) render(&state);
                 if (result & AC_TOGGLE_SELECTION) {
                     if (selection == -1) selection = y;
                     else selection = -1;

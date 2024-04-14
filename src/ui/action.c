@@ -19,7 +19,7 @@ int untracked_file_action(void *_file_path, const ActionArgs *args) {
 
     if (args->ch == 's') {
         git_stage_file(file_path);
-        return AC_RERENDER | AC_UPDATE_STATE;
+        return AC_UPDATE_STATE;
     }
 
     return 0;
@@ -41,7 +41,7 @@ int unstaged_file_action(void *_file, const ActionArgs *args) {
             git_stage_file(file->dest + 2);
         } else ERROR("Unkown file change type.\n");
 
-        return AC_RERENDER | AC_UPDATE_STATE;
+        return AC_UPDATE_STATE;
     }
 
     return 0;
@@ -63,7 +63,7 @@ int staged_file_action(void *_file, const ActionArgs *args) {
             git_unstage_file(file->dest + 2);
         } else ERROR("Unkown file change type.\n");
 
-        return AC_RERENDER | AC_UPDATE_STATE;
+        return AC_UPDATE_STATE;
     }
 
     return 0;
@@ -77,7 +77,7 @@ int unstaged_hunk_action(void *_hunk_args, const ActionArgs *args) {
         return AC_RERENDER;
     } else if (args->ch == 's') {
         git_stage_hunk(hunk_args->file, hunk_args->hunk);
-        return AC_RERENDER | AC_UPDATE_STATE;
+        return AC_UPDATE_STATE;
     }
 
     return 0;
@@ -91,7 +91,7 @@ int staged_hunk_action(void *_hunk_args, const ActionArgs *args) {
         return AC_RERENDER;
     } else if (args->ch == 'u') {
         git_unstage_hunk(hunk_args->file, hunk_args->hunk);
-        return AC_RERENDER | AC_UPDATE_STATE;
+        return AC_UPDATE_STATE;
     }
 
     return 0;
@@ -106,10 +106,10 @@ int unstaged_line_action(void *_line_args, const ActionArgs *args) {
         if (args->range_start == -1) {
             if (line_args->hunk->lines.data[line_args->line][0] == ' ') return 0;
             git_stage_line(line_args->file, line_args->hunk, line_args->line);
-            return AC_RERENDER | AC_UPDATE_STATE;
+            return AC_UPDATE_STATE;
         } else {
             git_stage_range(line_args->file, line_args->hunk, args->range_start - line_args->hunk_y, args->range_end - line_args->hunk_y);
-            return AC_TOGGLE_SELECTION | AC_RERENDER | AC_UPDATE_STATE;
+            return AC_TOGGLE_SELECTION | AC_UPDATE_STATE;
         }
     }
 
@@ -125,10 +125,10 @@ int staged_line_action(void *_line_args, const ActionArgs *args) {
         if (args->range_start == -1) {
             if (line_args->hunk->lines.data[line_args->line][0] == ' ') return 0;
             git_unstage_line(line_args->file, line_args->hunk, line_args->line);
-            return AC_RERENDER | AC_UPDATE_STATE;
+            return AC_UPDATE_STATE;
         } else {
             git_unstage_range(line_args->file, line_args->hunk, args->range_start - line_args->hunk_y, args->range_end - line_args->hunk_y);
-            return AC_TOGGLE_SELECTION | AC_RERENDER | AC_UPDATE_STATE;
+            return AC_TOGGLE_SELECTION | AC_UPDATE_STATE;
         }
     }
 

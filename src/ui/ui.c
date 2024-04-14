@@ -17,6 +17,7 @@ typedef struct {
     action_t *action;
     void *action_arg;
     int style;
+    char selectable;
 } Line;
 
 DEFINE_VECTOR_TYPE(LineVec, Line);
@@ -26,21 +27,22 @@ static LineVec lines = {0};
 
 #define FOLD_CHAR(is_folded) ((is_folded) ? "▸" : "▾")
 
-#define ADD_LINE(action, arg, style, ...)                 \
-    do {                                                  \
-        size_t size = snprintf(NULL, 0, __VA_ARGS__) + 1; \
-        char *str = (char *) ctxt_alloc(&ctxt, size);     \
-        snprintf(str, size, __VA_ARGS__);                 \
-        Line line = {str, action, arg, style};            \
-        VECTOR_PUSH(&lines, line);                        \
+#define ADD_LINE(action, arg, style, selectable, ...)      \
+    do {                                                   \
+        size_t size = snprintf(NULL, 0, __VA_ARGS__) + 1;  \
+        char *str = (char *) ctxt_alloc(&ctxt, size);      \
+        snprintf(str, size, __VA_ARGS__);                  \
+        Line line = {str, action, arg, style, selectable}; \
+        VECTOR_PUSH(&lines, line);                         \
     } while (0)
 
-#define EMPTY_LINE()                               \
-    do {                                           \
-        char *str = (char *) ctxt_alloc(&ctxt, 1); \
-        str[0] = '\0';                             \
-        Line line = {str, NULL, NULL, 0};          \
-        VECTOR_PUSH(&lines, line);                 \
+#define EMPTY_LINE()                                       \
+    do {                                                   \
+        char *str = (char *) ctxt_alloc(&ctxt, 2);         \
+        str[0] = ' '; /* makes it visible when selected */ \
+        str[1] = '\0';                                     \
+        Line line = {str, NULL, NULL, 0, 0};               \
+        VECTOR_PUSH(&lines, line);                         \
     } while (0)
 
 #define APPEND_LINE(...)                                               \
@@ -93,7 +95,7 @@ static void render_files(const FileVec *files, char staged) {
     for (size_t i = 0; i < files->length; i++) {
         File *file = &files->data[i];
 
-        ADD_LINE(file_action, file, file_style, "%s", FOLD_CHAR(file->is_folded));
+        ADD_LINE(file_action, file, file_style, 0, "%s", FOLD_CHAR(file->is_folded));
         if (file->change_type == FC_MODIFIED) APPEND_LINE("modified %s", file->src + 2);
         else if (file->change_type == FC_DELETED) APPEND_LINE("deleted %s", file->src + 2);
         else if (file->change_type == FC_CREATED) APPEND_LINE("created %s", file->dest + 2);
@@ -101,28 +103,28 @@ static void render_files(const FileVec *files, char staged) {
         else ERROR("Unkown file change type.\n");
 
         if (file->is_folded) continue;
-
         for (size_t i = 0; i < file->hunks.length; i++) {
             int hunk_y = lines.length + 1;
             Hunk *hunk = &file->hunks.data[i];
+
             HunkArgs *args = (HunkArgs *) ctxt_alloc(&ctxt, sizeof(HunkArgs));
             args->file = file;
             args->hunk = hunk;
+            ADD_LINE(hunk_action, args, hunk_style, 0, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
 
-            ADD_LINE(hunk_action, args, hunk_style, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
             if (hunk->is_folded) continue;
-
             for (size_t j = 0; j < hunk->lines.length; j++) {
                 char ch = hunk->lines.data[j][0];
                 int style = line_style;
                 if (ch == '+') style = add_line_style;
                 if (ch == '-') style = del_line_style;
+
                 LineArgs *args = (LineArgs *) ctxt_alloc(&ctxt, sizeof(LineArgs));
                 args->file = file;
                 args->hunk = hunk;
                 args->hunk_y = hunk_y;
                 args->line = j;
-                ADD_LINE(line_action, args, style, "%s", hunk->lines.data[j]);
+                ADD_LINE(line_action, args, style, 1, "%s", hunk->lines.data[j]);
             }
         }
     }
@@ -165,24 +167,24 @@ void render(State *state) {
     VECTOR_CLEAR(&lines);
 
     if (state->untracked.files.length > 0) {
-        ADD_LINE(&section_action, &state->untracked, section_style, "%sUntracked files:", FOLD_CHAR(state->untracked.is_folded));
+        ADD_LINE(&section_action, &state->untracked, section_style, 0, "%sUntracked files:", FOLD_CHAR(state->untracked.is_folded));
         if (!state->untracked.is_folded) {
             for (size_t i = 0; i < state->untracked.files.length; i++) {
                 char *file_path = state->untracked.files.data[i];
-                ADD_LINE(&untracked_file_action, file_path, file_style, "created %s", file_path);
+                ADD_LINE(&untracked_file_action, file_path, file_style, 0, "created %s", file_path);
             }
         }
         EMPTY_LINE();
     }
 
     if (state->unstaged.files.length > 0) {
-        ADD_LINE(&section_action, &state->unstaged, section_style, "%sUnstaged changes:", FOLD_CHAR(state->unstaged.is_folded));
+        ADD_LINE(&section_action, &state->unstaged, section_style, 0, "%sUnstaged changes:", FOLD_CHAR(state->unstaged.is_folded));
         if (!state->unstaged.is_folded) render_files(&state->unstaged.files, 0);
         EMPTY_LINE();
     }
 
     if (state->staged.files.length > 0) {
-        ADD_LINE(&section_action, &state->staged, section_style, "%sStaged changes:", FOLD_CHAR(state->staged.is_folded));
+        ADD_LINE(&section_action, &state->staged, section_style, 0, "%sStaged changes:", FOLD_CHAR(state->staged.is_folded));
         if (!state->staged.is_folded) render_files(&state->staged.files, 1);
         EMPTY_LINE();
     }
@@ -214,8 +216,4 @@ int invoke_action(int y, int ch, int range_start, int range_end) {
 
 int get_screen_height(void) { return getmaxy(stdscr); }
 int get_lines_length(void) { return lines.length; }
-int is_line(int y) {
-    // TODO: find a proper way...
-    if ((size_t) y >= lines.length) return 0;
-    return lines.data[y].action == &unstaged_line_action || lines.data[y].action == &staged_line_action;
-}
+int is_selectable(int y) { return (size_t) y < lines.length && lines.data[y].selectable; }
