@@ -205,6 +205,12 @@ void output(int scroll, int cursor, int selection_start, int selection_end) {
         attrset(0);
         bkgdset(0);
     }
+
+    for (int i = lines.length - scroll; i < getmaxy(stdscr); i++) {
+        attron(i == cursor ? A_REVERSE : 0);
+        printw(" \n");
+        attrset(0);
+    }
 }
 
 int invoke_action(int y, int ch, int range_start, int range_end) {
