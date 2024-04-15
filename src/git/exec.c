@@ -15,6 +15,8 @@ int gexec(char *const *args) {
     pid_t pid = fork();
     if (pid == -1) ERROR("Couldn't fork process.\n");
     if (pid == 0) {
+        close(STDOUT_FILENO);
+        close(STDERR_FILENO);
         if (execvp("git", args) == -1) exit(errno == ENOENT ? NO_GIT_BINARY : 1);
     }
 
@@ -84,19 +86,22 @@ int gexecw(char *const *args, const char *patch) {
 
     int pipe_fds[2];
     if (pipe(pipe_fds) == -1) ERROR("Couldn't open pipe.\n");
+    int read_fd = pipe_fds[0];
+    int write_fd = pipe_fds[1];
 
     pid_t pid = fork();
     if (pid == -1) ERROR("Couldn't fork process.\n");
     if (pid == 0) {
-        int read_fd = pipe_fds[0];
-        if (close(pipe_fds[1]) == -1) exit(1);
+        if (close(write_fd) == -1) exit(1);
 
         if (dup2(read_fd, STDIN_FILENO) == -1) exit(1);
+        close(STDOUT_FILENO);
+        close(STDERR_FILENO);
+
         if (execvp("git", args) == -1) exit(1);
     }
 
-    int write_fd = pipe_fds[1];
-    if (close(pipe_fds[0]) == -1) ERROR("Couldn't close pipe.\n");
+    if (close(read_fd) == -1) ERROR("Couldn't close pipe.\n");
 
     ssize_t patch_size = strlen(patch);
     ssize_t bytes = write(write_fd, patch, patch_size);
