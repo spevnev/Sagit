@@ -215,6 +215,16 @@ int is_git_initialized(void) {
     return WIFEXITED(exit_code) && WEXITSTATUS(exit_code) == 0;
 }
 
+int is_state_empty(State *state) {
+    assert(state != NULL);
+    return state->untracked.files.length == 0 && state->unstaged.files.length == 0 && state->staged.files.length == 0;
+}
+
+int is_ignored(char *file_path) {
+    int exit_code = gexec(CMD("git", "check-ignore", file_path));
+    return exit_code == 0;
+}
+
 void get_git_state(State *state) {
     assert(state != NULL);
 
@@ -226,11 +236,6 @@ void get_git_state(State *state) {
 
     state->staged.raw = gexecr(NULL, CMD_STAGED);
     state->staged.files = parse_diff(state->staged.raw);
-}
-
-int is_state_empty(State *state) {
-    assert(state != NULL);
-    return state->untracked.files.length == 0 && state->unstaged.files.length == 0 && state->staged.files.length == 0;
 }
 
 void update_git_state(State *state) {

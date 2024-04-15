@@ -43,6 +43,8 @@ static void stop_running(int signal) {
 // Recursively adds directory and its subdirectories to inotify.
 // NOTE: modifies path, which must fit longest possible path.
 static void watch_dirs_rec(int inotify_fd, char *path) {
+    if (is_ignored(path)) return;
+
     if (inotify_add_watch(inotify_fd, path, IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO) == -1)
         ERROR("Unable to watch a directory \"%s\".\n", path);
 
