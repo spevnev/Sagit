@@ -52,7 +52,7 @@ static FileVec parse_diff(char *diff) {
 
         // skip header
         while (i < lines.length && lines.data[i][0] != '-') i++;
-        assert(i + 2 < lines.length);
+        if (i == lines.length) break;
 
         File file = {0};
         file.is_folded = 1;
