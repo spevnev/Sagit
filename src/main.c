@@ -83,8 +83,10 @@ int main(int argc, char **argv) {
     sigaction(SIGINT, &action, NULL);
 
 #ifdef __linux__
-    int inotify_fd = inotify_init1(IN_NONBLOCK);
+    char event_buffer[1024];
     char path_buffer[4096] = ".";
+
+    int inotify_fd = inotify_init1(IN_NONBLOCK);
     watch_dirs_rec(inotify_fd, path_buffer);
 
     struct pollfd poll_fds[2] = {{STDIN_FILENO, POLLIN, 0}, {inotify_fd, POLLIN, 0}};
@@ -104,7 +106,6 @@ int main(int argc, char **argv) {
         if (getmaxx(stdscr) < MIN_WIDTH || getmaxy(stdscr) < MIN_HEIGHT) {
             clear();
             printw("Screen is too small! Make sure it is at least %dx%d.\n", MIN_WIDTH, MIN_HEIGHT);
-            printw("Press 'q' key to exit.\n");
             refresh();
 
             nodelay(stdscr, false);
@@ -116,12 +117,51 @@ int main(int argc, char **argv) {
         if (is_state_empty(&state)) {
             clear();
             printw("There are no unstaged changes.\n");
-            printw("Press 'q' key to exit.\n");
             refresh();
 
+#ifdef __linux__
+            int events = poll(poll_fds, 2, -1);
+            if (events == -1) {
+                if (errno == EINTR) continue;
+                ERROR("Unable to poll.\n");
+            }
+            assert(events > 0);
+
+            if (poll_fds[1].revents & POLLIN) {
+                char buffer[1024];
+                ssize_t bytes;
+                int new_dir = 0;
+                while ((bytes = read(inotify_fd, buffer, sizeof(buffer))) > 0) {
+                    struct inotify_event *event = (struct inotify_event *) buffer;
+                    if (new_dir) break;
+                    for (int i = events; i >= 0; i--) {
+                        if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR)) {
+                            new_dir = 1;
+                            break;
+                        }
+                        event++;
+                    }
+                    continue;
+                }
+                if (bytes == -1 && errno != EAGAIN) ERROR("Unable to read inotify event.\n");
+                if (new_dir) {
+                    path_buffer[0] = '.';
+                    path_buffer[1] = '\0';
+                    watch_dirs_rec(inotify_fd, path_buffer);
+                }
+
+                update_git_state(&state);
+                render(&state);
+                continue;
+            }
+
+            if ((poll_fds[0].revents & POLLIN) == 0) continue;
+            if (getch() == 'q') running = 0;
+#else
             nodelay(stdscr, false);
             if (getch() == 'q') running = 0;
             nodelay(stdscr, true);
+#endif
             continue;
         }
 
@@ -153,11 +193,10 @@ int main(int argc, char **argv) {
         assert(events > 0);
 
         if (poll_fds[1].revents & POLLIN) {
-            char buffer[1024];  // TODO: static or outside
             ssize_t bytes;
             int new_dir = 0;
-            while ((bytes = read(inotify_fd, buffer, sizeof(buffer))) > 0) {
-                struct inotify_event *event = (struct inotify_event *) buffer;
+            while ((bytes = read(inotify_fd, event_buffer, sizeof(event_buffer))) > 0) {
+                struct inotify_event *event = (struct inotify_event *) event_buffer;
                 if (new_dir) break;
                 for (int i = events; i >= 0; i--) {
                     if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR)) {
@@ -178,7 +217,7 @@ int main(int argc, char **argv) {
             if (ignore_inotify) {
                 ignore_inotify = 0;
             } else {
-                // if a key is pressed during external .git update, ignore that key
+                // if a key is pressed during external update, ignore that key
                 if (poll_fds[0].revents & POLLIN) {
                     while (getch() != ERR) continue;
                 }
