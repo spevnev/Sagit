@@ -108,9 +108,13 @@ int main(int argc, char **argv) {
             printw("Screen is too small! Make sure it is at least %dx%d.\n", MIN_WIDTH, MIN_HEIGHT);
             refresh();
 
+#ifdef __linux__
             nodelay(stdscr, false);
             if (getch() == 'q') running = 0;
             nodelay(stdscr, true);
+#else
+            if (getch() == 'q') running = 0;
+#endif
             continue;
         }
 
@@ -190,7 +194,6 @@ int main(int argc, char **argv) {
             if (errno == EINTR) continue;
             ERROR("Unable to poll.\n");
         }
-        assert(events > 0);
 
         if (poll_fds[1].revents & POLLIN) {
             ssize_t bytes;
