@@ -114,9 +114,9 @@ static void merge_files(const FileVec *old_files, FileVec *new_files) {
 
 static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
     // Because we are staging only a single hunk it should start at the same position as the original file
-    int ignore, start, old_length, new_length;
+    int ignore, start = 0, old_length = 0, new_length = 0;
     int matched = sscanf(hunk->header, hunk_diff_header, &start, &old_length, &ignore, &new_length);
-    assert(matched == 4);
+    assert(matched >= 3);
 
     size_t hunk_length = 0;
     for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
@@ -143,9 +143,9 @@ static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
 // Returns NULL in case patch doesn't contain any changes
 static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, char reverse) {
     // Because we are staging only a single hunk it should start at the same position as the original file
-    int ignore, start, old_length, new_length;
+    int ignore, start = 0, old_length = 0, new_length = 0;
     int matched = sscanf(hunk->header, hunk_diff_header, &start, &old_length, &ignore, &new_length);
-    assert(matched == 4);
+    assert(matched >= 3);
 
     size_t patch_size = 0;
     for (size_t i = 0; i < hunk->lines.length; i++) patch_size += strlen(hunk->lines.data[i]) + 1;
