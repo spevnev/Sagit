@@ -7,6 +7,8 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
+#include <termios.h>
 #include <unistd.h>
 #include "git/git.h"
 #include "git/state.h"
@@ -35,8 +37,16 @@ static void cleanup(void) {
 }
 
 static void stop_running(int signal) {
-    (void) signal;
+    assert(signal == SIGINT);
     running = 0;
+}
+
+static void resize(int signal) {
+    assert(signal == SIGWINCH);
+
+    struct winsize win;
+    ioctl(0, TIOCGWINSZ, &win);
+    resizeterm(win.ws_row, win.ws_col);
 }
 
 #ifdef __linux__
@@ -81,6 +91,8 @@ int main(int argc, char **argv) {
     struct sigaction action = {0};
     action.sa_handler = stop_running;
     sigaction(SIGINT, &action, NULL);
+    action.sa_handler = resize;
+    sigaction(SIGWINCH, &action, NULL);
 
 #ifdef __linux__
     char event_buffer[1024];

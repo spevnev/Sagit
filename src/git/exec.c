@@ -54,7 +54,9 @@ char *gexecr(int *output_exit_code, char *const *args) {
     if (buffer == NULL) ERROR("Process is out of memory.\n");
 
     int bytes;
-    while ((bytes = read(read_fd, buffer + buffer_offset, buffer_size)) > 0) {
+    while ((bytes = read(read_fd, buffer + buffer_offset, buffer_size)) > 0 || (bytes == -1 && errno == EINTR)) {
+        if (bytes == -1) continue;
+
         buffer_size -= bytes;
         buffer_offset += bytes;
 
