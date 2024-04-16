@@ -95,9 +95,13 @@ static void render_files(const FileVec *files, char staged) {
     for (size_t i = 0; i < files->length; i++) {
         File *file = &files->data[i];
 
+        if (file->change_type == FC_DELETED) {
+            ADD_LINE(file_action, file, file_style, 0, " deleted %s", file->src + 2);
+            continue;
+        }
+
         ADD_LINE(file_action, file, file_style, 0, "%s", FOLD_CHAR(file->is_folded));
         if (file->change_type == FC_MODIFIED) APPEND_LINE("modified %s", file->src + 2);
-        else if (file->change_type == FC_DELETED) APPEND_LINE("deleted %s", file->src + 2);
         else if (file->change_type == FC_CREATED) APPEND_LINE("created %s", file->dest + 2);
         else if (file->change_type == FC_RENAMED) APPEND_LINE("renamed %s -> %s", file->src + 2, file->dest + 2);
         else ERROR("Unkown file change type.\n");
