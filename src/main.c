@@ -77,10 +77,6 @@ int main(int argc, char **argv) {
 
     if (!is_git_initialized()) ERROR("Git is not initialized in the current directory.\n");
     get_git_state(&state);
-    if (is_state_empty(&state)) {
-        printf("There are no changes or untracked files.\n");
-        return EXIT_SUCCESS;
-    }
 
     struct sigaction action = {0};
     action.sa_handler = stop_running;
@@ -108,6 +104,18 @@ int main(int argc, char **argv) {
         if (getmaxx(stdscr) < MIN_WIDTH || getmaxy(stdscr) < MIN_HEIGHT) {
             clear();
             printw("Screen is too small! Make sure it is at least %dx%d.\n", MIN_WIDTH, MIN_HEIGHT);
+            printw("Press 'q' key to exit.\n");
+            refresh();
+
+            nodelay(stdscr, false);
+            if (getch() == 'q') running = 0;
+            nodelay(stdscr, true);
+            continue;
+        }
+
+        if (is_state_empty(&state)) {
+            clear();
+            printw("There are no unstaged changes.\n");
             printw("Press 'q' key to exit.\n");
             refresh();
 
