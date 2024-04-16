@@ -24,6 +24,30 @@ git config alias.sadd '!sagit'
 
 To see keybindings press `h`.
 
+### VSCode integration
+
+You can add keybinding like this to open full screen terminal in VSCode (to `keybindings.json`):
+
+```json
+{
+    "key": "KEYBINDING",
+    "command": "runCommands",
+    "args": {
+        "commands": [
+            "workbench.action.createTerminalEditor",
+            {
+                "command": "workbench.action.terminal.sendSequence",
+                "args": {
+                    "text": "sagit && exit\u000D"
+                }
+            }
+        ]
+    }
+}
+```
+
+NOTE: `\u000D` acts like Enter and is used to run the command
+
 ## Uninstalling
 
 Don't forget to set the same `BIN_PATH`.
