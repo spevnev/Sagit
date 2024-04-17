@@ -200,11 +200,10 @@ void output(int scroll, int cursor, int selection_start, int selection_end) {
         if ((size_t) y >= lines.length) break;
 
         char is_selected = i == cursor || (y >= selection_start && y <= selection_end);
-        int selected_style = is_selected ? A_REVERSE : 0;
-
         Line line = lines.data[scroll + i];
+
+        attron(line.style | (is_selected ? A_REVERSE : 0));
         bkgdset(line.style);
-        attron(line.style | selected_style);
         printw("%s\n", line.str);
         attrset(0);
         bkgdset(0);
@@ -218,10 +217,11 @@ void output(int scroll, int cursor, int selection_start, int selection_end) {
 }
 
 int invoke_action(int y, int ch, int range_start, int range_end) {
-    ActionArgs args = {ch, range_start, range_end};
     action_t *action = lines.data[y].action;
-    if (action != NULL) return action(lines.data[y].action_arg, &args);
-    return 0;
+    if (action == NULL) return 0;
+
+    ActionArgs args = {ch, range_start, range_end};
+    return action(lines.data[y].action_arg, &args);
 }
 
 int get_screen_height(void) { return getmaxy(stdscr); }

@@ -41,6 +41,7 @@ static void stop_running(int signal) {
     running = 0;
 }
 
+#ifdef __linux__
 static void resize(int signal) {
     assert(signal == SIGWINCH);
 
@@ -49,7 +50,6 @@ static void resize(int signal) {
     resizeterm(win.ws_row, win.ws_col);
 }
 
-#ifdef __linux__
 // Recursively adds directory and its subdirectories to inotify.
 // NOTE: modifies path, which must fit longest possible path.
 static void watch_dirs_rec(int inotify_fd, char *path) {
@@ -91,10 +91,11 @@ int main(int argc, char **argv) {
     struct sigaction action = {0};
     action.sa_handler = stop_running;
     sigaction(SIGINT, &action, NULL);
+
+#ifdef __linux__
     action.sa_handler = resize;
     sigaction(SIGWINCH, &action, NULL);
 
-#ifdef __linux__
     char event_buffer[1024];
     char path_buffer[4096] = ".";
 
