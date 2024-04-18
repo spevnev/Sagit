@@ -16,9 +16,6 @@ void git_unstage_file(const char *file);
 void git_stage_hunk(const File *file, const Hunk *hunk);
 void git_unstage_hunk(const File *file, const Hunk *hunk);
 
-void git_stage_line(const File *file, const Hunk *hunk, int line_idx);
-void git_unstage_line(const File *file, const Hunk *hunk, int line_idx);
-
 void git_stage_range(const File *file, const Hunk *hunk, int range_start, int range_end);
 void git_unstage_range(const File *file, const Hunk *hunk, int range_start, int range_end);
 

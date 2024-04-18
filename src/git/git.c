@@ -279,20 +279,6 @@ void git_unstage_hunk(const File *file, const Hunk *hunk) {
     free(patch);
 }
 
-void git_stage_line(const File *file, const Hunk *hunk, int line_idx) {
-    char *patch = create_patch_from_range(file, hunk, line_idx, line_idx, 0);
-    if (patch == NULL) return;
-    if (gexecw(CMD_APPLY, patch) != 0) ERROR("Unable to stage the line.\n");
-    free(patch);
-}
-
-void git_unstage_line(const File *file, const Hunk *hunk, int line_idx) {
-    char *patch = create_patch_from_range(file, hunk, line_idx, line_idx, 1);
-    if (patch == NULL) return;
-    if (gexecw(CMD_APPLY_REVERSE, patch) != 0) ERROR("Unable to unstage the line.\n");
-    free(patch);
-}
-
 void git_stage_range(const File *file, const Hunk *hunk, int range_start, int range_end) {
     char *patch = create_patch_from_range(file, hunk, range_start, range_end, 0);
     if (patch == NULL) return;

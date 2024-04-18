@@ -105,7 +105,7 @@ int unstaged_line_action(void *_line_args, const ActionArgs *args) {
     } else if (args->ch == 's') {
         if (args->range_start == -1) {
             if (line_args->hunk->lines.data[line_args->line][0] == ' ') return 0;
-            git_stage_line(line_args->file, line_args->hunk, line_args->line);
+            git_stage_range(line_args->file, line_args->hunk, line_args->line, line_args->line);
             return AC_UPDATE_STATE;
         } else {
             git_stage_range(line_args->file, line_args->hunk, args->range_start - line_args->hunk_y, args->range_end - line_args->hunk_y);
@@ -124,7 +124,7 @@ int staged_line_action(void *_line_args, const ActionArgs *args) {
     } else if (args->ch == 'u') {
         if (args->range_start == -1) {
             if (line_args->hunk->lines.data[line_args->line][0] == ' ') return 0;
-            git_unstage_line(line_args->file, line_args->hunk, line_args->line);
+            git_unstage_range(line_args->file, line_args->hunk, line_args->line, line_args->line);
             return AC_UPDATE_STATE;
         } else {
             git_unstage_range(line_args->file, line_args->hunk, args->range_start - line_args->hunk_y, args->range_end - line_args->hunk_y);
