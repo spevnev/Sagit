@@ -1,6 +1,7 @@
 #include "state.h"
 #include <stdlib.h>
 #include "utils/error.h"
+#include "utils/memory.h"
 #include "utils/vector.h"
 
 void free_files(FileVec *files) {
@@ -18,8 +19,7 @@ void free_files(FileVec *files) {
 void free_state(State *state) {
     ASSERT(state != NULL);
 
-    free(state->untracked.raw);
-    VECTOR_FREE(&state->untracked.files);
+    ctxt_free(&state->untracked_ctxt);
 
     free(state->unstaged.raw);
     free_files(&state->unstaged.files);

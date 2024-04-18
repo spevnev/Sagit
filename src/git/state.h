@@ -1,6 +1,7 @@
 #ifndef STATE_H
 #define STATE_H
 
+#include "utils/memory.h"
 #include "utils/vector.h"
 
 typedef struct {
@@ -29,12 +30,7 @@ typedef struct {
 } Section;
 
 typedef struct {
-    struct {
-        int is_folded;
-
-        char *raw;
-        str_vec files;
-    } untracked;
+    MemoryContext untracked_ctxt;
     struct {
         int is_folded;
 

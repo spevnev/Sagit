@@ -92,6 +92,7 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
         File *file = &files->data[i];
 
         if (file->change_type == FC_DELETED) {
+            // Don't display deleted files' content
             ADD_LINE(file_action, file, file_style, 0, " deleted %s", file->src + 2);
             continue;
         }
@@ -110,9 +111,12 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
             HunkArgs *args = (HunkArgs *) ctxt_alloc(&ctxt, sizeof(HunkArgs));
             args->file = file;
             args->hunk = hunk;
-            ADD_LINE(hunk_action, args, hunk_style, 0, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
+            if (file->change_type != FC_CREATED) {
+                // Created files always have one hunk, so there is no need to render it
+                ADD_LINE(hunk_action, args, hunk_style, 0, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
+                if (hunk->is_folded) continue;
+            }
 
-            if (hunk->is_folded) continue;
             for (size_t j = 0; j < hunk->lines.length; j++) {
                 char ch = hunk->lines.data[j][0];
                 int style = line_style;
@@ -165,17 +169,6 @@ void render(State *state) {
 
     ctxt_reset(&ctxt);
     VECTOR_RESET(&lines);
-
-    if (state->untracked.files.length > 0) {
-        ADD_LINE(&section_action, &state->untracked, section_style, 0, "%sUntracked files:", FOLD_CHAR(state->untracked.is_folded));
-        if (!state->untracked.is_folded) {
-            for (size_t i = 0; i < state->untracked.files.length; i++) {
-                char *file_path = state->untracked.files.data[i];
-                ADD_LINE(&untracked_file_action, file_path, file_style, 0, "created %s", file_path);
-            }
-        }
-        EMPTY_LINE();
-    }
 
     if (state->unstaged.files.length > 0) {
         ADD_LINE(&section_action, &state->unstaged, section_style, 0, "%sUnstaged changes:", FOLD_CHAR(state->unstaged.is_folded));
