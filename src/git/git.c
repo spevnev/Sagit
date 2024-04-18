@@ -1,5 +1,4 @@
 #include "git.h"
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,7 +23,7 @@ static const char *hunk_diff_header = "@@ -%d,%d +%d,%d @@\n";
 // Lines are stored as pointers into the text, thus text must be free after lines.
 // It also modifies text by replacing delimiters with nulls
 static str_vec split(char *text, char delimiter) {
-    assert(text != NULL);
+    ASSERT(text != NULL);
 
     str_vec lines = {0};
     char *line_start = text;
@@ -41,14 +40,14 @@ static str_vec split(char *text, char delimiter) {
 }
 
 static FileVec parse_diff(char *diff) {
-    assert(diff != NULL);
+    ASSERT(diff != NULL);
 
     str_vec lines = split(diff, '\n');
     FileVec files = {0};
     size_t i = 0;
     while (i < lines.length) {
         // check diff header
-        assert(strncmp(lines.data[i], "diff --git", 10) == 0);
+        ASSERT(strncmp(lines.data[i], "diff --git", 10) == 0);
 
         // skip header
         while (i < lines.length && lines.data[i][0] != '-') i++;
@@ -66,7 +65,7 @@ static FileVec parse_diff(char *diff) {
 
         while (i < lines.length) {
             if (lines.data[i][0] == 'd') break;
-            assert(lines.data[i][0] == '@');  // hunk header
+            ASSERT(lines.data[i][0] == '@');  // hunk header
 
             Hunk hunk = {0};
             hunk.header = lines.data[i++];
@@ -116,7 +115,7 @@ static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
     // Because we are staging only a single hunk it should start at the same position as the original file
     int ignore, start = 0, old_length = 0, new_length = 0;
     int matched = sscanf(hunk->header, hunk_diff_header, &start, &old_length, &ignore, &new_length);
-    assert(matched >= 3);
+    ASSERT(matched >= 3);
 
     size_t hunk_length = 0;
     for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
@@ -145,7 +144,7 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
     // Because we are staging only a single hunk it should start at the same position as the original file
     int ignore, start = 0, old_length = 0, new_length = 0;
     int matched = sscanf(hunk->header, hunk_diff_header, &start, &old_length, &ignore, &new_length);
-    assert(matched >= 3);
+    ASSERT(matched >= 3);
 
     size_t patch_size = 0;
     for (size_t i = 0; i < hunk->lines.length; i++) patch_size += strlen(hunk->lines.data[i]) + 1;
@@ -216,7 +215,7 @@ int is_git_initialized(void) {
 }
 
 int is_state_empty(State *state) {
-    assert(state != NULL);
+    ASSERT(state != NULL);
     return state->untracked.files.length == 0 && state->unstaged.files.length == 0 && state->staged.files.length == 0;
 }
 
@@ -226,7 +225,7 @@ int is_ignored(char *file_path) {
 }
 
 void get_git_state(State *state) {
-    assert(state != NULL);
+    ASSERT(state != NULL);
 
     state->untracked.raw = gexecr(NULL, CMD_UNTRACKED);
     state->untracked.files = split(state->untracked.raw, '\n');
@@ -239,9 +238,9 @@ void get_git_state(State *state) {
 }
 
 void update_git_state(State *state) {
-    assert(state != NULL);
+    ASSERT(state != NULL);
 
-    assert(state->untracked.raw != NULL);
+    ASSERT(state->untracked.raw != NULL);
     VECTOR_FREE(&state->untracked.files);
     free(state->untracked.raw);
     state->untracked.raw = gexecr(NULL, CMD_UNTRACKED);

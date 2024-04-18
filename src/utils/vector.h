@@ -36,7 +36,7 @@
 
 #define VECTOR_POP(vec)            \
     do {                           \
-        assert((vec)->length > 0); \
+        ASSERT((vec)->length > 0); \
         (vec)->length--;           \
     } while (0)
 

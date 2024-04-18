@@ -1,5 +1,4 @@
 #include "ui.h"
-#include <assert.h>
 #include <locale.h>
 #include <ncurses.h>
 #include <stdio.h>
@@ -47,7 +46,7 @@ static LineVec lines = {0};
 
 #define APPEND_LINE(...)                                               \
     do {                                                               \
-        assert(lines.length > 0);                                      \
+        ASSERT(lines.length > 0);                                      \
         Line *line = &lines.data[lines.length - 1];                    \
         size_t old_size = strlen(line->str);                           \
         size_t add_size = snprintf(NULL, 0, __VA_ARGS__) + 1;          \
@@ -87,7 +86,7 @@ static void init_styles(void) {
 }
 
 static void render_files(const FileVec *files, char staged) {
-    assert(files != NULL);
+    ASSERT(files != NULL);
     action_t *file_action = staged ? &staged_file_action : &unstaged_file_action;
     action_t *hunk_action = staged ? &staged_hunk_action : &unstaged_hunk_action;
     action_t *line_action = staged ? &staged_line_action : &unstaged_line_action;
@@ -165,7 +164,7 @@ void ui_cleanup(void) {
 }
 
 void render(State *state) {
-    assert(state != NULL);
+    ASSERT(state != NULL);
 
     ctxt_reset(&ctxt);
     VECTOR_CLEAR(&lines);

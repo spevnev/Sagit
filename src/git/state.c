@@ -1,10 +1,10 @@
 #include "state.h"
-#include <assert.h>
 #include <stdlib.h>
+#include "utils/error.h"
 #include "utils/vector.h"
 
 void free_files(FileVec *files) {
-    assert(files != NULL);
+    ASSERT(files != NULL);
 
     for (size_t i = 0; i < files->length; i++) {
         for (size_t j = 0; j < files->data[i].hunks.length; j++) {
@@ -16,7 +16,7 @@ void free_files(FileVec *files) {
 }
 
 void free_state(State *state) {
-    assert(state != NULL);
+    ASSERT(state != NULL);
 
     free(state->untracked.raw);
     VECTOR_FREE(&state->untracked.files);

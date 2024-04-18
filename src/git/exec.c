@@ -1,4 +1,3 @@
-#include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/wait.h>
@@ -10,7 +9,7 @@
 #define NO_GIT_BINARY 100  // exit code for forked process
 
 int gexec(char *const *args) {
-    assert(args != NULL);
+    ASSERT(args != NULL);
 
     pid_t pid = fork();
     if (pid == -1) ERROR("Couldn't fork process.\n");
@@ -27,7 +26,7 @@ int gexec(char *const *args) {
 }
 
 char *gexecr(int *output_exit_code, char *const *args) {
-    assert(args != NULL);
+    ASSERT(args != NULL);
 
     int pipe_fds[2];
     if (pipe(pipe_fds) == -1) ERROR("Couldn't open pipe.\n");
@@ -84,7 +83,7 @@ char *gexecr(int *output_exit_code, char *const *args) {
 }
 
 int gexecw(char *const *args, const char *patch) {
-    assert(args != NULL && patch != NULL);
+    ASSERT(args != NULL && patch != NULL);
 
     int pipe_fds[2];
     if (pipe(pipe_fds) == -1) ERROR("Couldn't open pipe.\n");

@@ -1,6 +1,5 @@
 #define _XOPEN_SOURCE 700
 #define _DEFAULT_SOURCE
-#include <assert.h>
 #include <dirent.h>
 #include <ncurses.h>
 #include <poll.h>
@@ -37,13 +36,13 @@ static void cleanup(void) {
 }
 
 static void stop_running(int signal) {
-    assert(signal == SIGINT);
+    ASSERT(signal == SIGINT);
     running = 0;
 }
 
 #ifdef __linux__
 static void resize(int signal) {
-    assert(signal == SIGWINCH);
+    ASSERT(signal == SIGWINCH);
 
     struct winsize win;
     ioctl(0, TIOCGWINSZ, &win);
@@ -59,7 +58,7 @@ static void watch_dirs_rec(int inotify_fd, char *path) {
         ERROR("Unable to watch a directory \"%s\".\n", path);
 
     DIR *dir = opendir(path);
-    assert(dir != NULL);
+    ASSERT(dir != NULL);
 
     size_t path_len = strlen(path);
     path[path_len] = '/';
@@ -143,7 +142,7 @@ int main(int argc, char **argv) {
                 if (errno == EINTR) continue;
                 ERROR("Unable to poll.\n");
             }
-            assert(events > 0);
+            ASSERT(events > 0);
 
             if (poll_fds[1].revents & POLLIN) {
                 char buffer[1024];
