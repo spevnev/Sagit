@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
         }
 
         int y = scroll + cursor;
-        int height = get_screen_height();
+        int height = getmaxy(stdscr);
 
         int selection_start = -1;
         int selection_end = -1;

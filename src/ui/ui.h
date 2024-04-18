@@ -28,7 +28,6 @@ void output(int scroll, int cursor, int selection_start, int selection_end);
 // Calls action associated with `ch` on element at position `y`
 int invoke_action(int y, int ch, int range_start, int range_end);
 
-int get_screen_height(void);
 int get_lines_length(void);
 int is_selectable(int y);
 

@@ -85,11 +85,8 @@ static void init_styles(void) {
     del_line_style = COLOR_PAIR(pair_num);
 }
 
-static void render_files(const FileVec *files, char staged) {
+static void render_files(const FileVec *files, action_t *file_action, action_t *hunk_action, action_t *line_action) {
     ASSERT(files != NULL);
-    action_t *file_action = staged ? &staged_file_action : &unstaged_file_action;
-    action_t *hunk_action = staged ? &staged_hunk_action : &unstaged_hunk_action;
-    action_t *line_action = staged ? &staged_line_action : &unstaged_line_action;
 
     for (size_t i = 0; i < files->length; i++) {
         File *file = &files->data[i];
@@ -182,13 +179,13 @@ void render(State *state) {
 
     if (state->unstaged.files.length > 0) {
         ADD_LINE(&section_action, &state->unstaged, section_style, 0, "%sUnstaged changes:", FOLD_CHAR(state->unstaged.is_folded));
-        if (!state->unstaged.is_folded) render_files(&state->unstaged.files, 0);
+        if (!state->unstaged.is_folded) render_files(&state->unstaged.files, &unstaged_file_action, &unstaged_hunk_action, &unstaged_line_action);
         EMPTY_LINE();
     }
 
     if (state->staged.files.length > 0) {
         ADD_LINE(&section_action, &state->staged, section_style, 0, "%sStaged changes:", FOLD_CHAR(state->staged.is_folded));
-        if (!state->staged.is_folded) render_files(&state->staged.files, 1);
+        if (!state->staged.is_folded) render_files(&state->staged.files, &staged_file_action, &staged_hunk_action, &staged_line_action);
         EMPTY_LINE();
     }
 }
@@ -223,6 +220,5 @@ int invoke_action(int y, int ch, int range_start, int range_end) {
     return action(lines.data[y].action_arg, &args);
 }
 
-int get_screen_height(void) { return getmaxy(stdscr); }
 int get_lines_length(void) { return lines.length; }
 int is_selectable(int y) { return (size_t) y < lines.length && lines.data[y].selectable; }
