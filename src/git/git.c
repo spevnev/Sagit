@@ -17,8 +17,8 @@ static char *const CMD_APPLY[]         = {"git", "apply", "--cached", "-"};
 static char *const CMD_APPLY_REVERSE[] = {"git", "apply", "--cached", "--reverse", "-"};
 // clang-format on
 
-static const char *file_diff_header = "diff --git %s %s\n--- %s\n+++ %s\n";
-static const char *hunk_diff_header = "@@ -%d,%d +%d,%d @@\n";
+static const char *file_header_fmt = "diff --git %s %s\n--- %s\n+++ %s\n";
+static const char *hunk_header_fmt = "@@ -%d,%d +%d,%d @@\n";
 
 // Lines are stored as pointers into the text, thus text must be free after lines.
 // It also modifies text by replacing delimiters with nulls
@@ -114,19 +114,23 @@ static void merge_files(const FileVec *old_files, FileVec *new_files) {
 static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
     // Because we are staging only a single hunk it should start at the same position as the original file
     int ignore, start = 0, old_length = 0, new_length = 0;
-    int matched = sscanf(hunk->header, hunk_diff_header, &start, &old_length, &ignore, &new_length);
+    int matched = sscanf(hunk->header, hunk_header_fmt, &start, &old_length, &ignore, &new_length);
     ASSERT(matched >= 3);
 
     size_t hunk_length = 0;
     for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
 
-    size_t file_header_size = snprintf(NULL, 0, file_diff_header, file->src, file->dest, file->src, file->dest);
-    size_t hunk_header_size = snprintf(NULL, 0, hunk_diff_header, start, old_length, start, new_length);
+    // handles (un)staging of partially staged FC_CREATED files
+    // const char *file_src = strcmp(file->src, "/dev/null") ? file->src : file->dest;
+    const char *file_src = file->src;
+
+    size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file_src, file->dest, file_src, file->dest);
+    size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, start, old_length, start, new_length);
     char *patch = (char *) malloc(file_header_size + hunk_header_size + hunk_length + 1);
 
     char *ptr = patch;
-    ptr += snprintf(ptr, file_header_size + 1, file_diff_header, file->src, file->dest, file->src, file->dest);
-    ptr += snprintf(ptr, hunk_header_size + 1, hunk_diff_header, start, old_length, start, new_length);
+    ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file_src, file->dest, file_src, file->dest);
+    ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, start, old_length, start, new_length);
 
     for (size_t i = 0; i < hunk->lines.length; i++) {
         size_t len = strlen(hunk->lines.data[i]);
@@ -143,12 +147,11 @@ static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
 static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, char reverse) {
     // Because we are staging only a single hunk it should start at the same position as the original file
     int ignore, start = 0, old_length = 0, new_length = 0;
-    int matched = sscanf(hunk->header, hunk_diff_header, &start, &old_length, &ignore, &new_length);
+    int matched = sscanf(hunk->header, hunk_header_fmt, &start, &old_length, &ignore, &new_length);
     ASSERT(matched >= 3);
 
-    size_t patch_size = 0;
+    size_t patch_size = 1;  // space for '\0'
     for (size_t i = 0; i < hunk->lines.length; i++) patch_size += strlen(hunk->lines.data[i]) + 1;
-    patch_size++;  // space for '\0'
     char *patch_body = (char *) malloc(patch_size);
 
     char changes = 0;
@@ -193,13 +196,16 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
         return NULL;
     }
 
-    size_t file_header_size = snprintf(NULL, 0, file_diff_header, file->src, file->dest, file->src, file->dest);
-    size_t hunk_header_size = snprintf(NULL, 0, hunk_diff_header, start, old_length, start, new_length);
-    char *patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
+    char *patch;
+    size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, start, old_length, start, new_length);
+
+    size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->src, file->dest, file->src, file->dest);
+    patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
 
     ptr = patch;
-    ptr += snprintf(ptr, file_header_size + 1, file_diff_header, file->src, file->dest, file->src, file->dest);
-    ptr += snprintf(ptr, hunk_header_size + 1, hunk_diff_header, start, old_length, start, new_length);
+    ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->src, file->dest, file->src, file->dest);
+    ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, start, old_length, start, new_length);
+
     memcpy(ptr, patch_body, patch_size);
     free(patch_body);
 

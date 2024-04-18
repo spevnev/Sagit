@@ -16,9 +16,14 @@
     } name
 
 // "Removes" all elements without changing capacity and changing memory
-#define VECTOR_CLEAR(vec) (vec)->length = 0;
+#define VECTOR_RESET(vec) (vec)->length = 0;
 
-#define VECTOR_FREE(vec) free((vec)->data)
+#define VECTOR_FREE(vec)     \
+    do {                     \
+        free((vec)->data);   \
+        (vec)->length = 0;   \
+        (vec)->capacity = 0; \
+    } while (0);
 
 #define VECTOR_PUSH(vec, element)                                                    \
     do {                                                                             \

@@ -164,7 +164,7 @@ void render(State *state) {
     ASSERT(state != NULL);
 
     ctxt_reset(&ctxt);
-    VECTOR_CLEAR(&lines);
+    VECTOR_RESET(&lines);
 
     if (state->untracked.files.length > 0) {
         ADD_LINE(&section_action, &state->untracked, section_style, 0, "%sUntracked files:", FOLD_CHAR(state->untracked.is_folded));
