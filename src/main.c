@@ -1,5 +1,9 @@
+#if __APPLE__
+    #define _DARWIN_C_SOURCE
+#endif
 #define _XOPEN_SOURCE 700
 #define _DEFAULT_SOURCE
+
 #include <dirent.h>
 #include <ncurses.h>
 #include <poll.h>
@@ -40,7 +44,6 @@ static void stop_running(int signal) {
     running = 0;
 }
 
-#ifdef __linux__
 static void resize(int signal) {
     ASSERT(signal == SIGWINCH);
 
@@ -49,6 +52,7 @@ static void resize(int signal) {
     resizeterm(win.ws_row, win.ws_col);
 }
 
+#ifdef __linux__
 // Recursively adds directory and its subdirectories to inotify.
 // NOTE: modifies path, which must fit longest possible path.
 static void watch_dirs_rec(int inotify_fd, char *path) {
@@ -88,20 +92,25 @@ int main(int argc, char **argv) {
     get_git_state(&state);
 
     struct sigaction action = {0};
+
     action.sa_handler = stop_running;
     sigaction(SIGINT, &action, NULL);
 
-#ifdef __linux__
     action.sa_handler = resize;
     sigaction(SIGWINCH, &action, NULL);
 
+#ifdef __linux__
     char event_buffer[1024];
     char path_buffer[4096] = ".";
 
     int inotify_fd = inotify_init1(IN_NONBLOCK);
     watch_dirs_rec(inotify_fd, path_buffer);
 
+    size_t poll_fds_num = 2;
     struct pollfd poll_fds[2] = {{STDIN_FILENO, POLLIN, 0}, {inotify_fd, POLLIN, 0}};
+#else
+    size_t poll_fds_num = 1;
+    struct pollfd poll_fds[1] = {{STDIN_FILENO, POLLIN, 0}};
 #endif
 
     ui_init();
@@ -121,13 +130,10 @@ int main(int argc, char **argv) {
             printw("Screen is too small! Make sure it is at least %dx%d.\n", MIN_WIDTH, MIN_HEIGHT);
             refresh();
 
-#ifdef __linux__
+            // TODO: poll
             nodelay(stdscr, false);
             if (getch() == 'q') running = 0;
             nodelay(stdscr, true);
-#else
-            if (getch() == 'q') running = 0;
-#endif
             continue;
         }
 
@@ -136,14 +142,13 @@ int main(int argc, char **argv) {
             printw("There are no unstaged changes.\n");
             refresh();
 
-#ifdef __linux__
-            int events = poll(poll_fds, 2, -1);
+            int events = poll(poll_fds, poll_fds_num, -1);
             if (events == -1) {
                 if (errno == EINTR) continue;
                 ERROR("Unable to poll.\n");
             }
-            ASSERT(events > 0);
 
+#ifdef __linux__
             if (poll_fds[1].revents & POLLIN) {
                 char buffer[1024];
                 ssize_t bytes;
@@ -171,14 +176,10 @@ int main(int argc, char **argv) {
                 render(&state);
                 continue;
             }
-
-            if ((poll_fds[0].revents & POLLIN) == 0) continue;
-            if (getch() == 'q') running = 0;
-#else
-            nodelay(stdscr, false);
-            if (getch() == 'q') running = 0;
-            nodelay(stdscr, true);
 #endif
+
+            if (getch() == 'q') running = 0;
+
             continue;
         }
 
@@ -201,13 +202,13 @@ int main(int argc, char **argv) {
         }
         refresh();
 
-#ifdef __linux__
-        int events = poll(poll_fds, 2, -1);
+        int events = poll(poll_fds, poll_fds_num, -1);
         if (events == -1) {
             if (errno == EINTR) continue;
             ERROR("Unable to poll.\n");
         }
 
+#ifdef __linux__
         if (poll_fds[1].revents & POLLIN) {
             ssize_t bytes;
             int new_dir = 0;
@@ -244,8 +245,8 @@ int main(int argc, char **argv) {
             }
         }
 
-        if ((poll_fds[0].revents & POLLIN) == 0) continue;
 #else
+        // if ((poll_fds[0].revents & POLLIN) == 0) continue;
         (void) ignore_inotify;
 #endif
 

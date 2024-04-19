@@ -145,11 +145,7 @@ void ui_init(void) {
     set_escdelay(0);
     keypad(stdscr, true);
     mousemask(MOUSE_SCROLL_DOWN | MOUSE_SCROLL_UP, NULL);
-
-#ifdef __linux__
-    // only needs to be non-blocking when inotify is used
     nodelay(stdscr, true);
-#endif
 
     start_color();
     use_default_colors();
