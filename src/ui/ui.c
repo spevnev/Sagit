@@ -16,7 +16,7 @@ typedef struct {
     action_t *action;
     void *action_arg;
     int style;
-    char selectable;
+    bool is_selectable;
 } Line;
 
 DEFINE_VECTOR_TYPE(LineVec, Line);
@@ -26,13 +26,13 @@ static LineVec lines = {0};
 
 #define FOLD_CHAR(is_folded) ((is_folded) ? "▸" : "▾")
 
-#define ADD_LINE(action, arg, style, selectable, ...)      \
-    do {                                                   \
-        size_t size = snprintf(NULL, 0, __VA_ARGS__) + 1;  \
-        char *str = (char *) ctxt_alloc(&ctxt, size);      \
-        snprintf(str, size, __VA_ARGS__);                  \
-        Line line = {str, action, arg, style, selectable}; \
-        VECTOR_PUSH(&lines, line);                         \
+#define ADD_LINE(action, arg, style, is_selectable, ...)      \
+    do {                                                      \
+        size_t size = snprintf(NULL, 0, __VA_ARGS__) + 1;     \
+        char *str = (char *) ctxt_alloc(&ctxt, size);         \
+        snprintf(str, size, __VA_ARGS__);                     \
+        Line line = {str, action, arg, style, is_selectable}; \
+        VECTOR_PUSH(&lines, line);                            \
     } while (0)
 
 #define EMPTY_LINE()                                       \
@@ -184,7 +184,7 @@ void output(int scroll, int cursor, int selection_start, int selection_end) {
         int y = scroll + i;
         if ((size_t) y >= lines.length) break;
 
-        char is_selected = i == cursor || (y >= selection_start && y <= selection_end);
+        bool is_selected = i == cursor || (y >= selection_start && y <= selection_end);
         Line line = lines.data[scroll + i];
 
         attron(line.style | (is_selected ? A_REVERSE : 0));
@@ -210,4 +210,4 @@ int invoke_action(int y, int ch, int range_start, int range_end) {
 }
 
 int get_lines_length(void) { return lines.length; }
-int is_selectable(int y) { return (size_t) y < lines.length && lines.data[y].selectable; }
+bool is_selectable(int y) { return (size_t) y < lines.length && lines.data[y].is_selectable; }

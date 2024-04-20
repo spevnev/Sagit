@@ -29,6 +29,6 @@ void output(int scroll, int cursor, int selection_start, int selection_end);
 int invoke_action(int y, int ch, int range_start, int range_end);
 
 int get_lines_length(void);
-int is_selectable(int y);
+bool is_selectable(int y);
 
 #endif  // UI_H

@@ -31,7 +31,7 @@
 
 #define SCREEN_PADDING 2
 
-static int running = 1;
+static bool running = true;
 static State state = {0};
 
 static void cleanup(void) {
@@ -41,7 +41,7 @@ static void cleanup(void) {
 
 static void stop_running(int signal) {
     ASSERT(signal == SIGINT);
-    running = 0;
+    running = false;
 }
 
 static void resize(int signal) {
@@ -117,12 +117,12 @@ int main(int argc, char **argv) {
     atexit(cleanup);
     render(&state);
 
-    int show_help = 0;
-    int saved_scroll = 0;
     int scroll = 0;
     int cursor = 0;
     int selection = -1;
-    int ignore_inotify = 0;
+    bool show_help = false;
+    int saved_scroll = 0;
+    bool ignore_inotify = false;
     MEVENT mouse_event = {0};
     while (running) {
         if (getmaxx(stdscr) < MIN_WIDTH || getmaxy(stdscr) < MIN_HEIGHT) {
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 
             // TODO: poll
             nodelay(stdscr, false);
-            if (getch() == 'q') running = 0;
+            if (getch() == 'q') running = false;
             nodelay(stdscr, true);
             continue;
         }
@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
             }
 #endif
 
-            if (getch() == 'q') running = 0;
+            if (getch() == 'q') running = false;
 
             continue;
         }
@@ -232,7 +232,7 @@ int main(int argc, char **argv) {
             }
 
             if (ignore_inotify) {
-                ignore_inotify = 0;
+                ignore_inotify = false;
             } else {
                 // if a key is pressed during external update, ignore that key
                 if (poll_fds[0].revents & POLLIN) {
@@ -260,7 +260,7 @@ int main(int argc, char **argv) {
 
             if (show_help) {
                 if (ch == 'q' || ch == KEY_ESCAPE || ch == 'h') {
-                    show_help = 0;
+                    show_help = false;
                     scroll = saved_scroll;
                 } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_SCROLL_DOWN) {
                     if (scroll + height < get_help_length()) scroll++;
@@ -269,9 +269,9 @@ int main(int argc, char **argv) {
                 }
             } else {
                 if (ch == 'q' || ch == KEY_ESCAPE) {
-                    running = 0;
+                    running = false;
                 } else if (ch == 'h') {
-                    show_help = 1;
+                    show_help = true;
                     saved_scroll = scroll;
                     scroll = 0;
                 } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_SCROLL_DOWN) {
@@ -289,7 +289,7 @@ int main(int argc, char **argv) {
                 } else if (y < get_lines_length()) {
                     int result = invoke_action(y, ch, selection_start, selection_end);
                     if (result & AC_UPDATE_STATE) {
-                        ignore_inotify = 1;
+                        ignore_inotify = true;
                         update_git_state(&state);
                     }
                     if ((result & AC_RERENDER) || (result & AC_UPDATE_STATE)) render(&state);

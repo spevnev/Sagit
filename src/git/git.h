@@ -1,11 +1,12 @@
 #ifndef GIT_H
 #define GIT_H
 
+#include <ncurses.h>
 #include "git/state.h"
 
-int is_git_initialized(void);
-int is_state_empty(State *state);
-int is_ignored(char *file_path);
+bool is_git_initialized(void);
+bool is_state_empty(State *state);
+bool is_ignored(char *file_path);
 
 void get_git_state(State *state);
 void update_git_state(State *state);

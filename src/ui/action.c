@@ -7,7 +7,7 @@ int section_action(void *_section, const ActionArgs *args) {
     Section *section = (Section *) _section;
 
     if (args->ch == ' ') {
-        section->is_folded ^= 1;
+        section->is_folded = !section->is_folded;
         return AC_RERENDER;
     }
 
@@ -29,7 +29,7 @@ int unstaged_file_action(void *_file, const ActionArgs *args) {
     File *file = (File *) _file;
 
     if (args->ch == ' ') {
-        file->is_folded ^= 1;
+        file->is_folded = !file->is_folded;
         return AC_RERENDER;
     } else if (args->ch == 's') {
         if (file->change_type == FC_MODIFIED || file->change_type == FC_DELETED) {
@@ -51,7 +51,7 @@ int staged_file_action(void *_file, const ActionArgs *args) {
     File *file = (File *) _file;
 
     if (args->ch == ' ') {
-        file->is_folded ^= 1;
+        file->is_folded = !file->is_folded;
         return AC_RERENDER;
     } else if (args->ch == 'u') {
         if (file->change_type == FC_MODIFIED || file->change_type == FC_DELETED) {
@@ -71,12 +71,13 @@ int staged_file_action(void *_file, const ActionArgs *args) {
 
 int unstaged_hunk_action(void *_hunk_args, const ActionArgs *args) {
     HunkArgs *hunk_args = (HunkArgs *) _hunk_args;
+    Hunk *hunk = hunk_args->hunk;
 
     if (args->ch == ' ') {
-        hunk_args->hunk->is_folded ^= 1;
+        hunk->is_folded = !hunk->is_folded;
         return AC_RERENDER;
     } else if (args->ch == 's') {
-        git_stage_hunk(hunk_args->file, hunk_args->hunk);
+        git_stage_hunk(hunk_args->file, hunk);
         return AC_UPDATE_STATE;
     }
 
@@ -85,12 +86,13 @@ int unstaged_hunk_action(void *_hunk_args, const ActionArgs *args) {
 
 int staged_hunk_action(void *_hunk_args, const ActionArgs *args) {
     HunkArgs *hunk_args = (HunkArgs *) _hunk_args;
+    Hunk *hunk = hunk_args->hunk;
 
     if (args->ch == ' ') {
-        hunk_args->hunk->is_folded ^= 1;
+        hunk->is_folded = !hunk->is_folded;
         return AC_RERENDER;
     } else if (args->ch == 'u') {
-        git_unstage_hunk(hunk_args->file, hunk_args->hunk);
+        git_unstage_hunk(hunk_args->file, hunk);
         return AC_UPDATE_STATE;
     }
 

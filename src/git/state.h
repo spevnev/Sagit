@@ -1,22 +1,23 @@
 #ifndef STATE_H
 #define STATE_H
 
+#include <ncurses.h>
 #include "utils/memory.h"
 #include "utils/vector.h"
 
 typedef struct {
-    int is_folded;
+    bool is_folded;
     const char *header;
     str_vec lines;
 } Hunk;
 
 DEFINE_VECTOR_TYPE(HunkVec, Hunk);
 
-enum FileChangeType { FC_CREATED = 1, FC_DELETED, FC_MODIFIED, FC_RENAMED };
+typedef enum { FC_CREATED = 1, FC_DELETED, FC_MODIFIED, FC_RENAMED } FileChange;
 
 typedef struct {
-    int is_folded;
-    char change_type;
+    bool is_folded;
+    FileChange change_type;
     const char *src;
     const char *dest;
     HunkVec hunks;
@@ -24,25 +25,16 @@ typedef struct {
 
 DEFINE_VECTOR_TYPE(FileVec, File);
 
-// NOTE: Actual sections (from State) must have the same layout
 typedef struct {
-    int is_folded;
+    bool is_folded;
+    char *raw;
+    FileVec files;
 } Section;
 
 typedef struct {
     MemoryContext untracked_ctxt;
-    struct {
-        int is_folded;
-
-        char *raw;
-        FileVec files;
-    } unstaged;
-    struct {
-        int is_folded;
-
-        char *raw;
-        FileVec files;
-    } staged;
+    Section unstaged;
+    Section staged;
 } State;
 
 void free_files(FileVec *files);

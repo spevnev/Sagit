@@ -60,7 +60,7 @@ static FileVec parse_diff(char *diff) {
         if (i == lines.length) break;
 
         File file = {0};
-        file.is_folded = 1;
+        file.is_folded = true;
         file.src = lines.data[i++] + 4;
         file.dest = lines.data[i++] + 4;
 
@@ -150,7 +150,7 @@ static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
 }
 
 // Returns NULL in case patch doesn't contain any changes or doesn't need to be applied
-static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, char reverse) {
+static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, bool reverse) {
     // Because we are staging only a single hunk it should start at the same position as the original file
     int ignore, start = 0, old_length = 0, new_length = 0;
     int matched = sscanf(hunk->header, hunk_header_fmt, &start, &old_length, &ignore, &new_length);
@@ -160,7 +160,7 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
     for (size_t i = 0; i < hunk->lines.length; i++) patch_size += strlen(hunk->lines.data[i]) + 1;
     char *patch_body = (char *) malloc(patch_size);
 
-    char changes = 0;
+    bool has_changes = false;
     char *ptr = patch_body;
     for (size_t i = 0; i < hunk->lines.length; i++) {
         const char *str = hunk->lines.data[i];
@@ -189,7 +189,7 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
                 old_length++;
             }
         } else {
-            if (str[0] == '-' || str[0] == '+') changes = 1;
+            if (str[0] == '-' || str[0] == '+') has_changes = true;
         }
 
         ptr += len;
@@ -206,7 +206,7 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
         return NULL;
     }
 
-    if (!changes) {
+    if (!has_changes) {
         free(patch_body);
         return NULL;
     }
@@ -297,7 +297,7 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
     return (File){1, FC_CREATED, "/dev/null", dst_path, hunks};
 }
 
-int is_git_initialized(void) {
+bool is_git_initialized(void) {
     int exit_code;
     char *output = gexecr(&exit_code, CMD("git", "status"));
     free(output);
@@ -305,9 +305,9 @@ int is_git_initialized(void) {
     return WIFEXITED(exit_code) && WEXITSTATUS(exit_code) == 0;
 }
 
-int is_state_empty(State *state) { return state->unstaged.files.length == 0 && state->staged.files.length == 0; }
+bool is_state_empty(State *state) { return state->unstaged.files.length == 0 && state->staged.files.length == 0; }
 
-int is_ignored(char *file_path) {
+bool is_ignored(char *file_path) {
     int exit_code = gexec(CMD("git", "check-ignore", file_path));
     return exit_code == 0;
 }
