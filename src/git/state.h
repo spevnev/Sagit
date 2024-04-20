@@ -11,7 +11,7 @@ typedef struct {
     str_vec lines;
 } Hunk;
 
-DEFINE_VECTOR_TYPE(HunkVec, Hunk);
+VECTOR_TYPEDEF(HunkVec, Hunk);
 
 typedef enum { FC_CREATED = 1, FC_DELETED, FC_MODIFIED, FC_RENAMED } FileChange;
 
@@ -23,7 +23,7 @@ typedef struct {
     HunkVec hunks;
 } File;
 
-DEFINE_VECTOR_TYPE(FileVec, File);
+VECTOR_TYPEDEF(FileVec, File);
 
 typedef struct {
     bool is_folded;

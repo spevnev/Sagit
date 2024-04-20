@@ -8,11 +8,11 @@
 
 #define INITIAL_VECTOR_CAPACITY 16
 
-#define DEFINE_VECTOR_TYPE(name, type) \
-    typedef struct {                   \
-        size_t capacity;               \
-        size_t length;                 \
-        type *data;                    \
+#define VECTOR_TYPEDEF(name, type) \
+    typedef struct {               \
+        size_t capacity;           \
+        size_t length;             \
+        type *data;                \
     } name
 
 // "Removes" all elements without changing capacity and changing memory
@@ -45,7 +45,7 @@
         (vec)->length--;           \
     } while (0)
 
-DEFINE_VECTOR_TYPE(str_vec, char *);
-DEFINE_VECTOR_TYPE(void_vec, void *);
+VECTOR_TYPEDEF(str_vec, char *);
+VECTOR_TYPEDEF(void_vec, void *);
 
 #endif  // VECTOR_H

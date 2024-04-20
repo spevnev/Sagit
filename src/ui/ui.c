@@ -19,7 +19,7 @@ typedef struct {
     bool is_selectable;
 } Line;
 
-DEFINE_VECTOR_TYPE(LineVec, Line);
+VECTOR_TYPEDEF(LineVec, Line);
 
 static MemoryContext ctxt = {0};
 static LineVec lines = {0};

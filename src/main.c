@@ -5,6 +5,7 @@
 #define _DEFAULT_SOURCE
 
 #include <dirent.h>
+#include <errno.h>
 #include <ncurses.h>
 #include <poll.h>
 #include <signal.h>
@@ -55,7 +56,7 @@ static void resize(int signal) {
 #ifdef __linux__
 // Recursively adds directory and its subdirectories to inotify.
 // NOTE: modifies path, which must fit longest possible path.
-static void watch_dirs_rec(int inotify_fd, char *path) {
+static void watch_dir(int inotify_fd, char *path) {
     if (is_ignored(path)) return;
 
     if (inotify_add_watch(inotify_fd, path, IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO) == -1)
@@ -75,7 +76,7 @@ static void watch_dirs_rec(int inotify_fd, char *path) {
         memcpy(path + path_len + 1, entry->d_name, name_length);
         path[path_len + 1 + name_length] = '\0';
 
-        watch_dirs_rec(inotify_fd, path);
+        watch_dir(inotify_fd, path);
     }
 
     closedir(dir);
@@ -104,7 +105,7 @@ int main(int argc, char **argv) {
     char path_buffer[4096] = ".";
 
     int inotify_fd = inotify_init1(IN_NONBLOCK);
-    watch_dirs_rec(inotify_fd, path_buffer);
+    watch_dir(inotify_fd, path_buffer);
 
     size_t poll_fds_num = 2;
     struct pollfd poll_fds[2] = {{STDIN_FILENO, POLLIN, 0}, {inotify_fd, POLLIN, 0}};
@@ -169,7 +170,7 @@ int main(int argc, char **argv) {
                 if (new_dir) {
                     path_buffer[0] = '.';
                     path_buffer[1] = '\0';
-                    watch_dirs_rec(inotify_fd, path_buffer);
+                    watch_dir(inotify_fd, path_buffer);
                 }
 
                 update_git_state(&state);
@@ -228,7 +229,7 @@ int main(int argc, char **argv) {
             if (new_dir) {
                 path_buffer[0] = '.';
                 path_buffer[1] = '\0';
-                watch_dirs_rec(inotify_fd, path_buffer);
+                watch_dir(inotify_fd, path_buffer);
             }
 
             if (ignore_inotify) {
