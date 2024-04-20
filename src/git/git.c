@@ -62,11 +62,11 @@ static FileVec parse_diff(char *diff) {
         File file = {0};
         file.is_folded = true;
         file.src = lines.data[i++] + 4;
-        file.dest = lines.data[i++] + 4;
+        file.dst = lines.data[i++] + 4;
 
-        if (strcmp(file.src + 2, file.dest + 2) == 0) file.change_type = FC_MODIFIED;
+        if (strcmp(file.src + 2, file.dst + 2) == 0) file.change_type = FC_MODIFIED;
         else if (strcmp(file.src, "/dev/null") == 0) file.change_type = FC_CREATED;
-        else if (strcmp(file.dest, "/dev/null") == 0) file.change_type = FC_DELETED;
+        else if (strcmp(file.dst, "/dev/null") == 0) file.change_type = FC_DELETED;
         else file.change_type = FC_RENAMED;
 
         while (i < lines.length) {
@@ -127,15 +127,15 @@ static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
     for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
 
     // handles (un)staging of partially staged FC_CREATED files
-    // const char *file_src = strcmp(file->src, "/dev/null") ? file->src : file->dest;
+    // const char *file_src = strcmp(file->src, "/dev/null") ? file->src : file->dst;
     const char *file_src = file->src;
 
-    size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file_src, file->dest, file_src, file->dest);
+    size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file_src, file->dst, file_src, file->dst);
     size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, start, old_length, start, new_length);
     char *patch = (char *) malloc(file_header_size + hunk_header_size + hunk_length + 1);
 
     char *ptr = patch;
-    ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file_src, file->dest, file_src, file->dest);
+    ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file_src, file->dst, file_src, file->dst);
     ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, start, old_length, start, new_length);
 
     for (size_t i = 0; i < hunk->lines.length; i++) {
@@ -201,7 +201,7 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
         // After unstaging this range the file will be left empty, thus in order
         // not to leave empty-yet-added files we have to unstage it
         ASSERT(file->change_type == FC_CREATED);
-        git_unstage_file(file->dest + 2);
+        git_unstage_file(file->dst + 2);
         free(patch_body);
         return NULL;
     }
@@ -217,26 +217,26 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
     if (file->change_type != FC_CREATED) {
         assert(strcmp(file->src, "/dev/null") != 0);
 
-        size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->src, file->dest, file->src, file->dest);
+        size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->src, file->dst, file->src, file->dst);
         patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
 
         ptr = patch;
-        ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->src, file->dest, file->src, file->dest);
-    } else if (reverse) {  // Partial unstaging of untracked file requires src == dest
-        size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->dest, file->dest, file->dest, file->dest);
+        ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->src, file->dst, file->src, file->dst);
+    } else if (reverse) {  // Partial unstaging of untracked file requires src == dst
+        size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->dst, file->dst, file->dst, file->dst);
         patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
 
         ptr = patch;
-        ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->dest, file->dest, file->dest, file->dest);
+        ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->dst, file->dst, file->dst, file->dst);
     } else {  // Partial staging of untracked file requires "new file mode"
         struct stat file_info = {0};
-        if (stat(file->dest + 2, &file_info) == -1) ERROR("Unable to stat \"%s\".\n", file->dest + 2);
+        if (stat(file->dst + 2, &file_info) == -1) ERROR("Unable to stat \"%s\".\n", file->dst + 2);
 
-        size_t file_header_size = snprintf(NULL, 0, new_file_header_fmt, file->dest, file->dest, file_info.st_mode, file->dest);
+        size_t file_header_size = snprintf(NULL, 0, new_file_header_fmt, file->dst, file->dst, file_info.st_mode, file->dst);
         patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
 
         ptr = patch;
-        ptr += snprintf(ptr, file_header_size + 1, new_file_header_fmt, file->dest, file->dest, file_info.st_mode, file->dest);
+        ptr += snprintf(ptr, file_header_size + 1, new_file_header_fmt, file->dst, file->dst, file_info.st_mode, file->dst);
     }
 
     ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, start, old_length, start, new_length);

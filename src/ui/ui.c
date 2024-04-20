@@ -99,8 +99,8 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
 
         ADD_LINE(file_action, file, file_style, 0, "%s", FOLD_CHAR(file->is_folded));
         if (file->change_type == FC_MODIFIED) APPEND_LINE("modified %s", file->src + 2);
-        else if (file->change_type == FC_CREATED) APPEND_LINE("created %s", file->dest + 2);
-        else if (file->change_type == FC_RENAMED) APPEND_LINE("renamed %s -> %s", file->src + 2, file->dest + 2);
+        else if (file->change_type == FC_CREATED) APPEND_LINE("created %s", file->dst + 2);
+        else if (file->change_type == FC_RENAMED) APPEND_LINE("renamed %s -> %s", file->src + 2, file->dst + 2);
         else ERROR("Unkown file change type.\n");
 
         if (file->is_folded) continue;

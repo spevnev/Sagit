@@ -19,7 +19,7 @@ typedef struct {
     bool is_folded;
     FileChange change_type;
     const char *src;
-    const char *dest;
+    const char *dst;
     HunkVec hunks;
 } File;
 
