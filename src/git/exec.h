@@ -7,8 +7,7 @@
 int gexec(char *const *args);
 
 // Runs git `args` and returns malloc()-ed stdout.
-// If `exit_code` is not null, writes child's exit code to it.
-char *gexecr(int *exit_code, char *const *args);
+char *gexecr(char *const *args);
 
 // Runs git `args` and writes `buffer` to its standard input.
 // Returns child's exit code.

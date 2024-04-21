@@ -57,7 +57,7 @@ char *pipe_read(int fd) {
     return buffer;
 }
 
-char *gexecr(int *output_exit_code, char *const *args) {
+char *gexecr(char *const *args) {
     ASSERT(args != NULL);
 
     int pipe_fds[2];
@@ -87,13 +87,10 @@ char *gexecr(int *output_exit_code, char *const *args) {
     char *buffer = pipe_read(read_fd);
     if (buffer == NULL) ERROR("Couldn't read from child's pipe.\n");
 
-    int _exit_code;
-    int *exit_code = output_exit_code;
-    if (exit_code == NULL) exit_code = &_exit_code;
-
-    if (waitpid(pid, exit_code, 0) == -1) ERROR("Couldn't wait for child process.\n");
-    if (WEXITSTATUS(*exit_code) == NO_GIT_BINARY) ERROR("Couldn't find git binary. Make sure it is in PATH.\n");
-    if (output_exit_code == NULL && WEXITSTATUS(_exit_code) != 0) {
+    int exit_code;
+    if (waitpid(pid, &exit_code, 0) == -1) ERROR("Couldn't wait for child process.\n");
+    if (WEXITSTATUS(exit_code) == NO_GIT_BINARY) ERROR("Couldn't find git binary. Make sure it is in PATH.\n");
+    if (WEXITSTATUS(exit_code) != 0) {
         char *buffer = pipe_read(error_read_fd);
         ERROR("Childs process exited with non-zero exit code. Child's stderr:\n%s\n", buffer);
     }

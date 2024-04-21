@@ -305,28 +305,26 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
     return (File){1, FC_CREATED, "/dev/null", dst_path, hunks};
 }
 
-bool is_git_initialized(void) {
-    int exit_code;
-    char *output = gexecr(&exit_code, CMD("git", "status"));
-    free(output);
+bool is_git_initialized(void) { return gexec(CMD("git", "status")) == 0; }
 
-    return WIFEXITED(exit_code) && WEXITSTATUS(exit_code) == 0;
+bool is_state_empty(State *state) {
+    ASSERT(state != NULL);
+    return state->unstaged.files.length == 0 && state->staged.files.length == 0;
 }
 
-bool is_state_empty(State *state) { return state->unstaged.files.length == 0 && state->staged.files.length == 0; }
-
 bool is_ignored(char *file_path) {
-    int exit_code = gexec(CMD("git", "check-ignore", file_path));
-    return exit_code == 0;
+    ASSERT(file_path != NULL);
+    return gexec(CMD("git", "check-ignore", file_path)) == 0;
 }
 
 void get_git_state(State *state) {
     ASSERT(state != NULL);
 
-    state->unstaged.raw = gexecr(NULL, CMD_UNSTAGED);
+    state->unstaged.raw = gexecr(CMD_UNSTAGED);
     state->unstaged.files = parse_diff(state->unstaged.raw);
 
-    char *raw_file_paths = gexecr(NULL, CMD_UNTRACKED);
+    // TODO: create a separate function
+    char *raw_file_paths = gexecr(CMD_UNTRACKED);
     str_vec untracked_file_paths = split(raw_file_paths, '\n');
 
     ctxt_init(&state->untracked_ctxt);
@@ -338,14 +336,14 @@ void get_git_state(State *state) {
     VECTOR_FREE(&untracked_file_paths);
     free(raw_file_paths);
 
-    state->staged.raw = gexecr(NULL, CMD_STAGED);
+    state->staged.raw = gexecr(CMD_STAGED);
     state->staged.files = parse_diff(state->staged.raw);
 }
 
 void update_git_state(State *state) {
     ASSERT(state != NULL);
 
-    char *unstaged_raw = gexecr(NULL, CMD_UNSTAGED);
+    char *unstaged_raw = gexecr(CMD_UNSTAGED);
     FileVec unstaged_files = parse_diff(unstaged_raw);
     merge_files(&state->unstaged.files, &unstaged_files);
     free_files(&state->unstaged.files);
@@ -353,7 +351,7 @@ void update_git_state(State *state) {
     state->unstaged.files = unstaged_files;
     state->unstaged.raw = unstaged_raw;
 
-    char *raw_file_paths = gexecr(NULL, CMD_UNTRACKED);
+    char *raw_file_paths = gexecr(CMD_UNTRACKED);
     str_vec untracked_file_paths = split(raw_file_paths, '\n');
 
     ctxt_reset(&state->untracked_ctxt);
@@ -365,7 +363,7 @@ void update_git_state(State *state) {
     VECTOR_FREE(&untracked_file_paths);
     free(raw_file_paths);
 
-    char *staged_raw = gexecr(NULL, CMD_STAGED);
+    char *staged_raw = gexecr(CMD_STAGED);
     FileVec staged_files = parse_diff(staged_raw);
     merge_files(&state->staged.files, &staged_files);
     free_files(&state->staged.files);
@@ -374,9 +372,13 @@ void update_git_state(State *state) {
     state->staged.raw = staged_raw;
 }
 
-void git_stage_file(const char *file_path) { gexec(CMD("git", "add", (char *) file_path)); }
+void git_stage_file(const char *file_path) {
+    if (gexec(CMD("git", "add", (char *) file_path)) != 0) ERROR("Unable to stage file.\n");
+}
 
-void git_unstage_file(const char *file_path) { gexec(CMD("git", "restore", "--staged", (char *) file_path)); }
+void git_unstage_file(const char *file_path) {
+    if (gexec(CMD("git", "restore", "--staged", (char *) file_path)) != 0) ERROR("Unable to unstage file.\n");
+}
 
 void git_stage_hunk(const File *file, const Hunk *hunk) {
     char *patch = create_patch_from_hunk(file, hunk);
