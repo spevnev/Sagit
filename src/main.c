@@ -51,20 +51,21 @@ static void resize(int signal) {
 
     struct winsize win;
     ioctl(0, TIOCGWINSZ, &win);
-    resizeterm(win.ws_row, win.ws_col);
+    if (resizeterm(win.ws_row, win.ws_col) == ERR) ERROR("Unable to resize terminal window.\n");
 }
 
 #ifdef __linux__
 // Recursively adds directory and its subdirectories to inotify.
 // NOTE: modifies path, which must fit longest possible path.
 static void watch_dir(int inotify_fd, char *path) {
+    ASSERT(path != NULL);
     if (is_ignored(path)) return;
 
     if (inotify_add_watch(inotify_fd, path, IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO) == -1)
         ERROR("Unable to watch a directory \"%s\".\n", path);
 
     DIR *dir = opendir(path);
-    ASSERT(dir != NULL);
+    if (dir == NULL) ERROR("Unable to open a directory  \"%s\".\n", path);
 
     size_t path_len = strlen(path);
     path[path_len] = '/';

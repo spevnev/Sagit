@@ -5,6 +5,7 @@
 
 int section_action(void *_section, const ActionArgs *args) {
     Section *section = (Section *) _section;
+    ASSERT(section != NULL && args != NULL);
 
     if (args->ch == ' ') {
         section->is_folded = !section->is_folded;
@@ -16,6 +17,7 @@ int section_action(void *_section, const ActionArgs *args) {
 
 int untracked_file_action(void *_file_path, const ActionArgs *args) {
     char *file_path = (char *) _file_path;
+    ASSERT(file_path != NULL && args != NULL);
 
     if (args->ch == 's') {
         git_stage_file(file_path);
@@ -27,6 +29,7 @@ int untracked_file_action(void *_file_path, const ActionArgs *args) {
 
 int unstaged_file_action(void *_file, const ActionArgs *args) {
     File *file = (File *) _file;
+    ASSERT(file != NULL && args != NULL);
 
     if (args->ch == ' ') {
         file->is_folded = !file->is_folded;
@@ -49,6 +52,7 @@ int unstaged_file_action(void *_file, const ActionArgs *args) {
 
 int staged_file_action(void *_file, const ActionArgs *args) {
     File *file = (File *) _file;
+    ASSERT(file != NULL && args != NULL);
 
     if (args->ch == ' ') {
         file->is_folded = !file->is_folded;
@@ -71,6 +75,7 @@ int staged_file_action(void *_file, const ActionArgs *args) {
 
 int unstaged_hunk_action(void *_hunk_args, const ActionArgs *args) {
     HunkArgs *hunk_args = (HunkArgs *) _hunk_args;
+    ASSERT(hunk_args != NULL && args != NULL);
     Hunk *hunk = hunk_args->hunk;
 
     if (args->ch == ' ') {
@@ -86,6 +91,7 @@ int unstaged_hunk_action(void *_hunk_args, const ActionArgs *args) {
 
 int staged_hunk_action(void *_hunk_args, const ActionArgs *args) {
     HunkArgs *hunk_args = (HunkArgs *) _hunk_args;
+    ASSERT(hunk_args != NULL && args != NULL);
     Hunk *hunk = hunk_args->hunk;
 
     if (args->ch == ' ') {
@@ -101,6 +107,7 @@ int staged_hunk_action(void *_hunk_args, const ActionArgs *args) {
 
 int unstaged_line_action(void *_line_args, const ActionArgs *args) {
     LineArgs *line_args = (LineArgs *) _line_args;
+    ASSERT(line_args != NULL && args != NULL);
 
     if (args->ch == ' ') {
         return AC_TOGGLE_SELECTION;
@@ -120,6 +127,7 @@ int unstaged_line_action(void *_line_args, const ActionArgs *args) {
 
 int staged_line_action(void *_line_args, const ActionArgs *args) {
     LineArgs *line_args = (LineArgs *) _line_args;
+    ASSERT(line_args != NULL && args != NULL);
 
     if (args->ch == ' ') {
         return AC_TOGGLE_SELECTION;

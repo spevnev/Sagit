@@ -5,6 +5,7 @@
 #define VECTOR_H
 
 #include <stdlib.h>
+#include "utils/error.h"
 
 #define INITIAL_VECTOR_CAPACITY 16
 
@@ -27,6 +28,7 @@
 
 #define VECTOR_PUSH(vec, element)                                                    \
     do {                                                                             \
+        ASSERT((vec) != NULL);                                                       \
         if ((vec)->capacity == 0) {                                                  \
             (vec)->capacity = INITIAL_VECTOR_CAPACITY;                               \
             (vec)->data = malloc((vec)->capacity * sizeof((element)));               \
