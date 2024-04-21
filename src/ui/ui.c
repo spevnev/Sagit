@@ -179,26 +179,38 @@ void render(State *state) {
     }
 }
 
-void output(int scroll, int cursor, int selection_start, int selection_end) {
-    for (int i = 0; i < getmaxy(stdscr); i++) {
+int output(int scroll, int cursor, int selection_start, int selection_end) {
+    int width = getmaxx(stdscr);
+    int height = getmaxy(stdscr);
+
+    int style = 0;
+    int wrapped = 0;
+    int wrapped_before_cursor = 0;
+    for (int i = 0; i < height - wrapped; i++) {
         int y = scroll + i;
         if ((size_t) y >= lines.length) break;
 
         bool is_selected = i == cursor || (y >= selection_start && y <= selection_end);
         Line line = lines.data[scroll + i];
+        style = line.style;
+        int length = strlen(line.str);
 
-        attron(line.style | (is_selected ? A_REVERSE : 0));
-        bkgdset(line.style);
-        printw("%s\n", line.str);
-        attrset(0);
-        bkgdset(0);
+        attrset(style | (is_selected ? A_REVERSE : 0));
+        bkgdset(style);
+        printw("%s", line.str);
+        if (length % width != 0) printw("\n");
+
+        wrapped += (length - 1) / width;
+        if (i <= cursor) wrapped_before_cursor = wrapped;
     }
 
-    for (int i = lines.length - scroll; i < getmaxy(stdscr); i++) {
-        attron(i == cursor ? A_REVERSE : 0);
+    for (int i = lines.length - scroll; i < height; i++) {
+        attrset(i == cursor ? A_REVERSE : 0);
         printw(" \n");
-        attrset(0);
     }
+
+    clrtobot();
+    return wrapped_before_cursor;
 }
 
 int invoke_action(int y, int ch, int range_start, int range_end) {

@@ -23,8 +23,8 @@ void ui_cleanup(void);
 
 // Renders to buffer
 void render(State *state);
-// Outputs the buffer
-void output(int scroll, int cursor, int selection_start, int selection_end);
+// Outputs the buffer, returns number of wrapped lines before cursor
+int output(int scroll, int cursor, int selection_start, int selection_end);
 // Calls action associated with `ch` on element at position `y`
 int invoke_action(int y, int ch, int range_start, int range_end);
 
