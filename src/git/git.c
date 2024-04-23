@@ -1,5 +1,6 @@
 #include "git.h"
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -292,16 +293,16 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
     static const char *hunk_header_fmt = "@@ -0,0 +0,%d @@";
 
     struct stat file_info = {0};
-    if (stat(file_path, &file_info) == -1) ERROR("Unable to stat \"%s\".\n", file_path);
+    if (stat(file_path, &file_info) == -1) ERROR("Unable to stat \"%s\": %s.\n", file_path, strerror(errno));
     size_t size = file_info.st_size;
 
     int fd = open(file_path, O_RDONLY);
-    if (fd == -1) ERROR("Unable to open \"%s\".\n", file_path);
+    if (fd == -1) ERROR("Unable to open \"%s\": %s.\n", file_path, strerror(errno));
 
     // TODO: read in blocks instead?
     char *buffer = (char *) malloc(size);
     if (buffer == NULL) ERROR("Process is out of memory.\n");
-    if (read(fd, buffer, size) != (ssize_t) size) ERROR("Unable to read \"%s\".\n", file_path);
+    if (read(fd, buffer, size) != (ssize_t) size) ERROR("Unable to read \"%s\": %s.\n", file_path, strerror((errno)));
     close(fd);
 
     size_t offset = 0;

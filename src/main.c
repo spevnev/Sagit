@@ -64,7 +64,7 @@ static void resize(int signal) {
 
     struct winsize win;
     ioctl(0, TIOCGWINSZ, &win);
-    if (resizeterm(win.ws_row, win.ws_col) == ERR) ERROR("Unable to resize terminal window.\n");
+    if (resizeterm(win.ws_row, win.ws_col) == ERR) ERROR("Unable to resize terminal window: %s.\n", strerror(errno));
 }
 
 #ifdef __linux__
@@ -75,10 +75,10 @@ static void watch_dir(char *path) {
     if (is_ignored(path)) return;
 
     if (inotify_add_watch(inotify_fd, path, IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO) == -1)
-        ERROR("Unable to watch a directory \"%s\".\n", path);
+        ERROR("Unable to watch a directory \"%s\": %s.\n", path, strerror(errno));
 
     DIR *dir = opendir(path);
-    if (dir == NULL) ERROR("Unable to open a directory  \"%s\".\n", path);
+    if (dir == NULL) ERROR("Unable to open a directory \"%s\": %s.\n", path, strerror(errno));
 
     size_t path_len = strlen(path);
     path[path_len] = '/';
@@ -102,7 +102,7 @@ bool poll_events(void) {
     int events = poll(poll_fds, sizeof(poll_fds) / sizeof(struct pollfd), -1);
     if (events == -1) {
         if (errno == EINTR) return false;
-        ERROR("Unable to poll.\n");
+        ERROR("Unable to poll: %s.\n", strerror(errno));
     }
 
 #ifdef __linux__

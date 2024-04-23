@@ -25,4 +25,12 @@
         }                                                                                    \
     } while (0)
 
+#define UNREACHABLE()                                                              \
+    do {                                                                           \
+        endwin();                                                                  \
+        fprintf(stderr, "UNREACHABLE was reached at %s:%d\n", __FILE__, __LINE__); \
+        fflush(stderr);                                                            \
+        _exit(1);                                                                  \
+    } while (0)
+
 #endif  // ERROR_H
