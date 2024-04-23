@@ -171,20 +171,29 @@ void handle_help(void) {
 
     int ch;
     while ((ch = getch()) != ERR) {
-        int mouse = 0;
         if (ch == KEY_MOUSE) {
             MEVENT mouse_event;
             getmouse(&mouse_event);
-            mouse = mouse_event.bstate;
+            ch = mouse_event.bstate;
         }
 
-        if (ch == 'q' || ch == KEY_ESCAPE || ch == 'h') {
-            show_help = false;
-            help_scroll = 0;
-        } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_SCROLL_DOWN) {
-            if (help_scroll + getmaxy(stdscr) < get_help_length()) help_scroll++;
-        } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_SCROLL_UP) {
-            if (help_scroll > 0) help_scroll--;
+        switch (ch) {
+            case KEY_ESCAPE:
+            case 'q':
+            case 'h':
+                show_help = false;
+                help_scroll = 0;
+                break;
+            case MOUSE_SCROLL_DOWN:
+            case KEY_DOWN:
+            case 'j':
+                if (help_scroll + getmaxy(stdscr) < get_help_length()) help_scroll++;
+                break;
+            case MOUSE_SCROLL_UP:
+            case KEY_UP:
+            case 'k':
+                if (help_scroll > 0) help_scroll--;
+                break;
         }
     }
 }
@@ -219,7 +228,6 @@ int main(int argc, char **argv) {
     atexit(cleanup);
     render(&state);
 
-    MEVENT mouse_event;
     int scroll = 0, cursor = 0, selection = -1;
     while (running) {
         clear();
@@ -261,41 +269,55 @@ int main(int argc, char **argv) {
 
         int ch;
         while ((ch = getch()) != ERR) {
-            int mouse = 0;
             if (ch == KEY_MOUSE) {
+                MEVENT mouse_event;
                 getmouse(&mouse_event);
-                mouse = mouse_event.bstate;
+                ch = mouse_event.bstate;
             }
 
-            if (ch == 'q' || ch == KEY_ESCAPE) {
-                running = false;
-            } else if (ch == 'h') {
-                show_help = true;
-            } else if (ch == 'j' || ch == KEY_DOWN || mouse == MOUSE_SCROLL_DOWN) {
-                if (cursor < height - 1 - SCREEN_PADDING) cursor++;
-                else if (scroll + height < get_lines_length()) {
-                    if (cursor > height - 1 - SCREEN_PADDING) cursor--;
-                    scroll++;
-                } else if (cursor < height - 1) cursor++;
+            switch (ch) {
+                case KEY_ESCAPE:
+                case 'q':
+                    running = false;
+                    break;
+                case 'h':
+                    show_help = true;
+                    break;
+                case MOUSE_SCROLL_DOWN:
+                case KEY_DOWN:
+                case 'j':
+                    if (cursor < height - 1 - SCREEN_PADDING) cursor++;
+                    else if (scroll + height < get_lines_length()) {
+                        if (cursor > height - 1 - SCREEN_PADDING) cursor--;
+                        scroll++;
+                    } else if (cursor < height - 1) cursor++;
 
-                if (!is_selectable(scroll + cursor)) selection = -1;
-            } else if (ch == 'k' || ch == KEY_UP || mouse == MOUSE_SCROLL_UP) {
-                if (cursor > SCREEN_PADDING) cursor--;
-                else if (scroll > 0) scroll--;
-                else if (cursor > 0) cursor--;
+                    if (!is_selectable(scroll + cursor)) selection = -1;
 
-                if (!is_selectable(scroll + cursor)) selection = -1;
-            } else if (y < get_lines_length()) {
-                int result = invoke_action(y, ch, selection_start, selection_end);
-                if (result & AC_UPDATE_STATE) {
+                    break;
+                case MOUSE_SCROLL_UP:
+                case KEY_UP:
+                case 'k':
+                    if (cursor > SCREEN_PADDING) cursor--;
+                    else if (scroll > 0) scroll--;
+                    else if (cursor > 0) cursor--;
+
+                    if (!is_selectable(scroll + cursor)) selection = -1;
+
+                    break;
+                default:
+                    if (y < get_lines_length()) {
+                        int result = invoke_action(y, ch, selection_start, selection_end);
+                        if (result & AC_UPDATE_STATE) {
 #ifdef __linux__
-                    ignore_inotify = true;
+                            ignore_inotify = true;
 #endif
-                    update_git_state(&state);
-                    render(&state);
-                }
-                if (result & AC_RERENDER) render(&state);
-                if (result & AC_TOGGLE_SELECTION) selection = selection == -1 ? y : -1;
+                            update_git_state(&state);
+                            render(&state);
+                        }
+                        if (result & AC_RERENDER) render(&state);
+                        if (result & AC_TOGGLE_SELECTION) selection = selection == -1 ? y : -1;
+                    }
             }
         }
     }

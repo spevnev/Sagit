@@ -98,10 +98,19 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
         }
 
         ADD_LINE(file_action, file, file_style, 0, "%s", FOLD_CHAR(file->is_folded));
-        if (file->change_type == FC_MODIFIED) APPEND_LINE("modified %s", file->src + 2);
-        else if (file->change_type == FC_CREATED) APPEND_LINE("created %s", file->dst + 2);
-        else if (file->change_type == FC_RENAMED) APPEND_LINE("renamed %s -> %s", file->src + 2, file->dst + 2);
-        else UNREACHABLE();
+        switch (file->change_type) {
+            case FC_MODIFIED:
+                APPEND_LINE("modified %s", file->src + 2);
+                break;
+            case FC_CREATED:
+                APPEND_LINE("created %s", file->dst + 2);
+                break;
+            case FC_RENAMED:
+                APPEND_LINE("renamed %s -> %s", file->src + 2, file->dst + 2);
+                break;
+            default:
+                UNREACHABLE();
+        }
 
         if (file->is_folded) continue;
         for (size_t i = 0; i < file->hunks.length; i++) {

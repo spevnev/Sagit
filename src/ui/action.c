@@ -35,14 +35,21 @@ int unstaged_file_action(void *_file, const ActionArgs *args) {
         file->is_folded = !file->is_folded;
         return AC_RERENDER;
     } else if (args->ch == 's') {
-        if (file->change_type == FC_MODIFIED || file->change_type == FC_DELETED) {
-            git_stage_file(file->src + 2);
-        } else if (file->change_type == FC_CREATED) {
-            git_stage_file(file->dst + 2);
-        } else if (file->change_type == FC_RENAMED) {
-            git_stage_file(file->src + 2);
-            git_stage_file(file->dst + 2);
-        } else UNREACHABLE();
+        switch (file->change_type) {
+            case FC_MODIFIED:
+            case FC_DELETED:
+                git_stage_file(file->src + 2);
+                break;
+            case FC_CREATED:
+                git_stage_file(file->dst + 2);
+                break;
+            case FC_RENAMED:
+                git_stage_file(file->src + 2);
+                git_stage_file(file->dst + 2);
+                break;
+            default:
+                UNREACHABLE();
+        }
 
         return AC_UPDATE_STATE;
     }
@@ -58,14 +65,21 @@ int staged_file_action(void *_file, const ActionArgs *args) {
         file->is_folded = !file->is_folded;
         return AC_RERENDER;
     } else if (args->ch == 'u') {
-        if (file->change_type == FC_MODIFIED || file->change_type == FC_DELETED) {
-            git_unstage_file(file->src + 2);
-        } else if (file->change_type == FC_CREATED) {
-            git_unstage_file(file->dst + 2);
-        } else if (file->change_type == FC_RENAMED) {
-            git_unstage_file(file->src + 2);
-            git_unstage_file(file->dst + 2);
-        } else UNREACHABLE();
+        switch (file->change_type) {
+            case FC_MODIFIED:
+            case FC_DELETED:
+                git_unstage_file(file->src + 2);
+                break;
+            case FC_CREATED:
+                git_unstage_file(file->dst + 2);
+                break;
+            case FC_RENAMED:
+                git_unstage_file(file->src + 2);
+                git_unstage_file(file->dst + 2);
+                break;
+            default:
+                UNREACHABLE();
+        }
 
         return AC_UPDATE_STATE;
     }

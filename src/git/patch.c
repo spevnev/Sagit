@@ -208,7 +208,8 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
         ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->dst, file->dst, file->dst, file->dst);
     } else {  // Partial staging of untracked file requires "new file mode"
         struct stat file_info = {0};
-        if (stat(file->dst + 2, &file_info) == -1) ERROR("Unable to stat \"%s\".\n", file->dst + 2);
+        const char *file_path = file->dst + 2;
+        if (stat(file_path, &file_info) == -1) ERROR("Unable to stat \"%s\": %s.\n", file_path, strerror(errno));
 
         size_t file_header_size = snprintf(NULL, 0, new_file_header_fmt, file->dst, file->dst, file_info.st_mode, file->dst);
         patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
@@ -219,9 +220,8 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
     }
 
     ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
-
     memcpy(ptr, patch_body, patch_size);
-    free(patch_body);
 
+    free(patch_body);
     return patch;
 }
