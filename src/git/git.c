@@ -138,17 +138,13 @@ static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
     size_t hunk_length = 0;
     for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
 
-    // handles (un)staging of partially staged FC_CREATED files
-    // const char *file_src = strcmp(file->src, "/dev/null") ? file->src : file->dst;
-    const char *file_src = file->src;
-
-    size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file_src, file->dst, file_src, file->dst);
+    size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->src, file->dst, file->src, file->dst);
     size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, start, old_length, start, new_length);
     char *patch = (char *) malloc(file_header_size + hunk_header_size + hunk_length + 1);
     if (patch == NULL) ERROR("Process is out of memory.\n");
 
     char *ptr = patch;
-    ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file_src, file->dst, file_src, file->dst);
+    ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->src, file->dst, file->src, file->dst);
     ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, start, old_length, start, new_length);
 
     for (size_t i = 0; i < hunk->lines.length; i++) {

@@ -200,6 +200,9 @@ int main(int argc, char **argv) {
         if (show_help) {
             output_help(scroll);
         } else {
+            // make sure there is always content on the screen
+            if (scroll > get_lines_length()) scroll = MAX(0, get_lines_length() - cursor);
+
             height -= output(scroll, cursor, selection_start, selection_end);
             move(cursor, 0);
         }
@@ -249,7 +252,6 @@ int main(int argc, char **argv) {
         }
 
 #else
-        // if ((poll_fds[0].revents & POLLIN) == 0) continue;
         (void) ignore_inotify;
 #endif
 
