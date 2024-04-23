@@ -180,23 +180,19 @@ void render(State *state) {
 }
 
 int output(int scroll, int cursor, int selection_start, int selection_end) {
-    int width = getmaxx(stdscr);
-    int height = getmaxy(stdscr);
+    int width = getmaxx(stdscr), height = getmaxy(stdscr);
+    int wrapped = 0, wrapped_before_cursor = 0;
 
-    int style = 0;
-    int wrapped = 0;
-    int wrapped_before_cursor = 0;
     for (int i = 0; i < height - wrapped; i++) {
         int y = scroll + i;
         if ((size_t) y >= lines.length) break;
 
         bool is_selected = i == cursor || (y >= selection_start && y <= selection_end);
         Line line = lines.data[scroll + i];
-        style = line.style;
         int length = strlen(line.str);
 
-        attrset(style | (is_selected ? A_REVERSE : 0));
-        bkgdset(style);
+        attrset(line.style | (is_selected ? A_REVERSE : 0));
+        bkgdset(line.style);
         printw("%s", line.str);
         if (length % width != 0) printw("\n");
 
@@ -210,6 +206,9 @@ int output(int scroll, int cursor, int selection_start, int selection_end) {
     }
 
     clrtobot();
+
+    attrset(0);
+    bkgdset(0);
     return wrapped_before_cursor;
 }
 
