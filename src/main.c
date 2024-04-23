@@ -99,7 +99,7 @@ static void watch_dir(char *path) {
 #endif
 
 bool poll_events(void) {
-    int events = poll(poll_fds, sizeof(poll_fds) / sizeof(struct pollfd), -1);
+    int events = poll(poll_fds, sizeof(poll_fds) / sizeof(poll_fds[0]), -1);
     if (events == -1) {
         if (errno == EINTR) return false;
         ERROR("Unable to poll: %s.\n", strerror(errno));
