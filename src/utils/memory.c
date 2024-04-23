@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "error.h"
+#include "utils/error.h"
 
 #define INITIAL_REGION_SIZE 4096
 #define REGION_SIZE_MULTIPLIER 2

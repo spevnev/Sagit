@@ -1,4 +1,4 @@
-#include "ui/action.h"
+#include "action.h"
 #include "git/git.h"
 #include "git/state.h"
 #include "utils/error.h"
