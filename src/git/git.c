@@ -13,12 +13,12 @@
 #include "utils/memory.h"
 #include "utils/vector.h"
 
-#define PATCH_PATH ".failed_patch"
+#define FAILED_PATCH_PATH ".failed_patch"
 
-#define DUMP_PATCH(patch)                                    \
-    do {                                                     \
-        int fd = open(PATCH_PATH, O_WRONLY | O_CREAT, 0755); \
-        write(fd, patch, strlen(patch));                     \
+#define DUMP_PATCH(patch)                                           \
+    do {                                                            \
+        int fd = open(FAILED_PATCH_PATH, O_WRONLY | O_CREAT, 0755); \
+        write(fd, patch, strlen(patch));                            \
     } while (0);
 
 // clang-format off
@@ -422,7 +422,7 @@ void git_stage_hunk(const File *file, const Hunk *hunk) {
     char *patch = create_patch_from_hunk(file, hunk);
     if (gexecw(CMD_APPLY, patch) != 0) {
         DUMP_PATCH(patch);
-        ERROR("Unable to stage the hunk. Failed patch written to %s.\n", PATCH_PATH);
+        ERROR("Unable to stage the hunk. Failed patch written to %s.\n", FAILED_PATCH_PATH);
     }
     free(patch);
 }
@@ -433,7 +433,7 @@ void git_unstage_hunk(const File *file, const Hunk *hunk) {
     char *patch = create_patch_from_hunk(file, hunk);
     if (gexecw(CMD_APPLY_REVERSE, patch) != 0) {
         DUMP_PATCH(patch);
-        ERROR("Unable to unstage the hunk. Failed patch written to %s.\n", PATCH_PATH);
+        ERROR("Unable to unstage the hunk. Failed patch written to %s.\n", FAILED_PATCH_PATH);
     }
     free(patch);
 }
@@ -445,7 +445,7 @@ void git_stage_range(const File *file, const Hunk *hunk, int range_start, int ra
     if (patch == NULL) return;
     if (gexecw(CMD_APPLY, patch) != 0) {
         DUMP_PATCH(patch);
-        ERROR("Unable to stage the range. Failed patch written to %s.\n", PATCH_PATH);
+        ERROR("Unable to stage the range. Failed patch written to %s.\n", FAILED_PATCH_PATH);
     }
     free(patch);
 }
@@ -457,7 +457,7 @@ void git_unstage_range(const File *file, const Hunk *hunk, int range_start, int 
     if (patch == NULL) return;
     if (gexecw(CMD_APPLY_REVERSE, patch) != 0) {
         DUMP_PATCH(patch);
-        ERROR("Unable to unstage the range. Failed patch written to %s.\n", PATCH_PATH);
+        ERROR("Unable to unstage the range. Failed patch written to %s.\n", FAILED_PATCH_PATH);
     }
     free(patch);
 }
