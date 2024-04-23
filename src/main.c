@@ -122,7 +122,7 @@ bool poll_events(void) {
                 }
                 event++;
             }
-            return false;
+            continue;
         }
         if (bytes == -1 && errno != EAGAIN) ERROR("Unable to read inotify event.\n");
         if (new_dir) {
@@ -136,7 +136,7 @@ bool poll_events(void) {
         } else {
             // if a key is pressed during external update, ignore that key
             if (poll_fds[0].revents & POLLIN) {
-                while (getch() != ERR) return false;
+                while (getch() != ERR) continue;
             }
 
             update_git_state(&state);
