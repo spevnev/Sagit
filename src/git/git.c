@@ -169,7 +169,7 @@ static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
     size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->src, file->dst, file->src, file->dst);
     size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
     char *patch = (char *) malloc(file_header_size + hunk_header_size + hunk_length + 1);
-    if (patch == NULL) ERROR("Process is out of memory.\n");
+    if (patch == NULL) OUT_OF_MEMORY();
 
     char *ptr = patch;
     ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->src, file->dst, file->src, file->dst);
@@ -195,7 +195,7 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
     size_t patch_size = 1;  // space for '\0'
     for (size_t i = 0; i < hunk->lines.length; i++) patch_size += strlen(hunk->lines.data[i]) + 1;
     char *patch_body = (char *) malloc(patch_size);
-    if (patch_body == NULL) ERROR("Process is out of memory.\n");
+    if (patch_body == NULL) OUT_OF_MEMORY();
 
     bool has_changes = false;
     char *ptr = patch_body;
@@ -256,14 +256,14 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
 
         size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->src, file->dst, file->src, file->dst);
         patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
-        if (patch == NULL) ERROR("Process is out of memory.\n");
+        if (patch == NULL) OUT_OF_MEMORY();
 
         ptr = patch;
         ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->src, file->dst, file->src, file->dst);
     } else if (reverse) {  // Partial unstaging of untracked file requires src == dst
         size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->dst, file->dst, file->dst, file->dst);
         patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
-        if (patch == NULL) ERROR("Process is out of memory.\n");
+        if (patch == NULL) OUT_OF_MEMORY();
 
         ptr = patch;
         ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->dst, file->dst, file->dst, file->dst);
@@ -273,7 +273,7 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
 
         size_t file_header_size = snprintf(NULL, 0, new_file_header_fmt, file->dst, file->dst, file_info.st_mode, file->dst);
         patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
-        if (patch == NULL) ERROR("Process is out of memory.\n");
+        if (patch == NULL) OUT_OF_MEMORY();
 
         ptr = patch;
         ptr += snprintf(ptr, file_header_size + 1, new_file_header_fmt, file->dst, file->dst, file_info.st_mode, file->dst);
@@ -301,7 +301,7 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
 
     // TODO: read in blocks instead?
     char *buffer = (char *) malloc(size);
-    if (buffer == NULL) ERROR("Process is out of memory.\n");
+    if (buffer == NULL) OUT_OF_MEMORY();
     if (read(fd, buffer, size) != (ssize_t) size) ERROR("Unable to read \"%s\": %s.\n", file_path, strerror((errno)));
     close(fd);
 
@@ -423,7 +423,7 @@ void git_stage_hunk(const File *file, const Hunk *hunk) {
     char *patch = create_patch_from_hunk(file, hunk);
     if (gexecw(CMD_APPLY, patch) != 0) {
         DUMP_PATCH(patch);
-        ERROR("Unable to stage the hunk. Failed patch written to %s.\n", FAILED_PATCH_PATH);
+        ERROR("Unable to stage the hunk. Failed patch written to \"%s\".\n", FAILED_PATCH_PATH);
     }
     free(patch);
 }
@@ -434,7 +434,7 @@ void git_unstage_hunk(const File *file, const Hunk *hunk) {
     char *patch = create_patch_from_hunk(file, hunk);
     if (gexecw(CMD_APPLY_REVERSE, patch) != 0) {
         DUMP_PATCH(patch);
-        ERROR("Unable to unstage the hunk. Failed patch written to %s.\n", FAILED_PATCH_PATH);
+        ERROR("Unable to unstage the hunk. Failed patch written to \"%s\".\n", FAILED_PATCH_PATH);
     }
     free(patch);
 }
@@ -446,7 +446,7 @@ void git_stage_range(const File *file, const Hunk *hunk, int range_start, int ra
     if (patch == NULL) return;
     if (gexecw(CMD_APPLY, patch) != 0) {
         DUMP_PATCH(patch);
-        ERROR("Unable to stage the range. Failed patch written to %s.\n", FAILED_PATCH_PATH);
+        ERROR("Unable to stage the range. Failed patch written to \"%s\".\n", FAILED_PATCH_PATH);
     }
     free(patch);
 }
@@ -458,7 +458,7 @@ void git_unstage_range(const File *file, const Hunk *hunk, int range_start, int 
     if (patch == NULL) return;
     if (gexecw(CMD_APPLY_REVERSE, patch) != 0) {
         DUMP_PATCH(patch);
-        ERROR("Unable to unstage the range. Failed patch written to %s.\n", FAILED_PATCH_PATH);
+        ERROR("Unable to unstage the range. Failed patch written to \"%s\".\n", FAILED_PATCH_PATH);
     }
     free(patch);
 }

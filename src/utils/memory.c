@@ -13,7 +13,7 @@ static MemoryRegion *new_region(size_t size) {
     ASSERT(size > 0);
 
     MemoryRegion *region = (MemoryRegion *) malloc(sizeof(MemoryRegion) + size);
-    if (region == NULL) ERROR("Process is out of memory.\n");
+    if (region == NULL) OUT_OF_MEMORY();
 
     memset(region, 0, sizeof(MemoryRegion));
     region->capacity = size;

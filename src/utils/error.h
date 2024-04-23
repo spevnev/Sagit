@@ -33,4 +33,6 @@
         _exit(1);                                                                  \
     } while (0)
 
+#define OUT_OF_MEMORY() ERROR("Process is out of memory.\n")
+
 #endif  // ERROR_H

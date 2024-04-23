@@ -41,7 +41,7 @@ char *pipe_read(int fd) {
     size_t buffer_offset = 0;
 
     char *buffer = (char *) malloc(buffer_capacity + 1);
-    if (buffer == NULL) ERROR("Process is out of memory.\n");
+    if (buffer == NULL) OUT_OF_MEMORY();
 
     int bytes;
     while ((bytes = read(fd, buffer + buffer_offset, buffer_size)) > 0 || (bytes == -1 && errno == EINTR)) {
@@ -54,7 +54,7 @@ char *pipe_read(int fd) {
             buffer_size = buffer_capacity;
             buffer_capacity *= 2;
             buffer = (char *) realloc(buffer, buffer_capacity + 1);
-            if (buffer == NULL) ERROR("Process is out of memory.\n");
+            if (buffer == NULL) OUT_OF_MEMORY();
         }
     }
     if (bytes == -1) {

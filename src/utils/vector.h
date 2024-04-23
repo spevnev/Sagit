@@ -32,11 +32,11 @@
         if ((vec)->capacity == 0) {                                                  \
             (vec)->capacity = INITIAL_VECTOR_CAPACITY;                               \
             (vec)->data = malloc((vec)->capacity * sizeof((element)));               \
-            if ((vec)->data == NULL) ERROR("Process is out of memory.\n");           \
+            if ((vec)->data == NULL) OUT_OF_MEMORY();                                \
         } else if ((vec)->length == (vec)->capacity) {                               \
             (vec)->capacity *= 2;                                                    \
             (vec)->data = realloc((vec)->data, (vec)->capacity * sizeof((element))); \
-            if ((vec)->data == NULL) ERROR("Process is out of memory.\n");           \
+            if ((vec)->data == NULL) OUT_OF_MEMORY();                                \
         }                                                                            \
         (vec)->data[(vec)->length++] = (element);                                    \
     } while (0)
