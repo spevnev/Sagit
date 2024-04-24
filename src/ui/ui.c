@@ -9,6 +9,7 @@
 #include "ui/action.h"
 #include "utils/error.h"
 #include "utils/memory.h"
+#include "utils/sort.h"
 #include "utils/vector.h"
 
 typedef struct {
@@ -85,38 +86,7 @@ static void init_styles(void) {
     del_line_style = COLOR_PAIR(pair_num);
 }
 
-static void swap(size_t *arr, size_t i, size_t j) {
-    size_t temp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = temp;
-}
-
-static int compare_files(const File *files, size_t i, size_t j) { return strcmp(files[i].dst + 2, files[j].dst + 2); }
-
-static void quicksort(const File *files, size_t *arr, size_t l, size_t r) {
-    if (l >= r) return;
-
-    size_t pivot = arr[r];
-    size_t i = l, j = r;
-    while (i < j) {
-        while (compare_files(files, arr[i], pivot) < 0 && i < j) i++;
-        while (compare_files(files, arr[j], pivot) >= 0 && i < j) j--;
-        if (i < j) swap(arr, i, j);
     }
-    swap(arr, i, r);
-
-    if (i > 0) quicksort(files, arr, l, i - 1);
-    quicksort(files, arr, i + 1, r);
-}
-
-// Returns a vector of indexes which point to files in the original vector
-static size_vec sort_files(const FileVec *files) {
-    size_vec indexes = {0};
-
-    for (size_t i = 0; i < files->length; i++) VECTOR_PUSH(&indexes, i);
-    quicksort(files->data, indexes.data, 0, files->length - 1);
-
-    return indexes;
 }
 
 static void render_files(const FileVec *files, action_t *file_action, action_t *hunk_action, action_t *line_action) {
