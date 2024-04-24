@@ -91,7 +91,7 @@ static void watch_dir(char *path) {
         memcpy(path + path_len + 1, entry->d_name, name_length);
         path[path_len + 1 + name_length] = '\0';
 
-        watch_dir(inotify_fd, path);
+        watch_dir(path);
     }
 
     closedir(dir);
@@ -128,7 +128,7 @@ bool poll_events(void) {
         if (new_dir) {
             path_buffer[0] = '.';
             path_buffer[1] = '\0';
-            watch_dir(inotify_fd, path_buffer);
+            watch_dir(path_buffer);
         }
 
         if (ignore_inotify) {
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
     poll_fds[1] = (struct pollfd){inotify_fd, POLLIN, 0};
 
     char path_buffer[4096] = ".";
-    watch_dir(inotify_fd, path_buffer);
+    watch_dir(path_buffer);
 #endif
 
     ui_init();
