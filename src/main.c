@@ -35,6 +35,7 @@
 static bool running = true;
 static bool show_help = false;
 static State state = {0};
+static size_vec hunk_idxs = {0};
 
 #ifdef __linux__
 static int inotify_fd = -1;
@@ -51,6 +52,7 @@ static void cleanup(void) {
 #endif
     ui_cleanup();
     free_state(&state);
+    VECTOR_FREE(&hunk_idxs);
 }
 
 static void stop_running(int signal) {
@@ -139,7 +141,7 @@ bool poll_events(void) {
             }
 
             update_git_state(&state);
-            render(&state);
+            render(&state, &hunk_idxs);
             return false;
         }
     }
@@ -225,7 +227,7 @@ int main(int argc, char **argv) {
 
     ui_init();
     atexit(cleanup);
-    render(&state);
+    render(&state, &hunk_idxs);
 
     int scroll = 0, cursor = 0, selection = -1;
     while (running) {
@@ -294,6 +296,16 @@ int main(int argc, char **argv) {
                     if (!is_selectable(scroll + cursor)) selection = -1;
 
                     break;
+                case 'J':
+                    for (size_t i = 0; i < hunk_idxs.length; i++) {
+                        if (hunk_idxs.data[i] <= y) continue;
+
+                        if (hunk_idxs.data[i] < scroll + getmaxy(stdscr) - SCROLL_PADDING) cursor = hunk_idxs.data[i] - scroll;
+                        else scroll = hunk_idxs.data[i] - cursor;
+
+                        break;
+                    }
+                    break;
                 case MOUSE_SCROLL_UP:
                 case KEY_UP:
                 case 'k':
@@ -304,6 +316,17 @@ int main(int argc, char **argv) {
                     if (!is_selectable(scroll + cursor)) selection = -1;
 
                     break;
+                case 'K': {
+                    int last_index = -1;
+                    for (size_t i = 0; i < hunk_idxs.length; i++) {
+                        if (hunk_idxs.data[i] >= y) break;
+                        last_index = hunk_idxs.data[i];
+                    }
+                    if (last_index == -1) break;
+
+                    if (last_index > scroll + SCROLL_PADDING) cursor = last_index - scroll;
+                    else scroll = last_index - cursor;
+                } break;
                 default:
                     if (y < get_lines_length()) {
                         int result = invoke_action(y, ch, selection_start, selection_end);
@@ -312,9 +335,9 @@ int main(int argc, char **argv) {
                             ignore_inotify = true;
 #endif
                             update_git_state(&state);
-                            render(&state);
+                            render(&state, &hunk_idxs);
                         }
-                        if (result & AC_RERENDER) render(&state);
+                        if (result & AC_RERENDER) render(&state, &hunk_idxs);
                         if (result & AC_TOGGLE_SELECTION) selection = selection == -1 ? y : -1;
                     }
             }

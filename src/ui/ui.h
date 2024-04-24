@@ -38,8 +38,8 @@ typedef enum { LS_SECTION, LS_FILE, LS_HUNK, LS_LINE, LS_ADD_LINE, LS_DEL_LINE, 
 void ui_init(void);
 void ui_cleanup(void);
 
-// Renders to buffer
-void render(State *state);
+// Renders to buffer and populates hunk_idxs
+void render(State *state, size_vec *hunk_idxs);
 // Outputs the buffer, returns number of wrapped lines before cursor
 int output(int scroll, int cursor, int selection_start, int selection_end);
 // Calls action associated with `ch` on element at position `y`

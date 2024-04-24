@@ -8,6 +8,8 @@ static const char *help_lines[] = {
     "h       - open/close (this) help"                                         ,
     "j, down - next line"                                                      ,
     "k, up   - previous line"                                                  ,
+    "J       - next (visible) hunk"                                            ,
+    "K       - previous (visible) hunk"                                        ,
     "space   - on section, file, hunk: fold/unfold"                            ,
     "          on line: start selecting a range"                               ,
     "s       - stage untracked/unstaged change"                                ,
