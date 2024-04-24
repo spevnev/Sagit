@@ -127,25 +127,52 @@ static void merge_files(const FileVec *old_files, FileVec *new_files) {
     }
 }
 
+typedef struct {
+    int start;
+    int old_length;
+    int new_length;
+} HunkHeader;
+
+HunkHeader parse_hunk_header(const char *raw) {
+    ASSERT(raw != NULL);
+
+    HunkHeader header = {0};
+    int a = 0, b = 0, pos = 0;
+
+    if (sscanf(raw, "@@ -%d%n", &a, &pos) != 1) ERROR("Unable to parse hunk header: \"%s\".\n", raw);
+    raw += pos;
+
+    if (sscanf(raw, ",%d %n", &b, &pos) == 1) {
+        header.old_length = b;
+        raw += pos;
+    } else {
+        header.old_length = a;
+        raw++;
+    }
+
+    if (sscanf(raw, "+%d,%d @@", &a, &b) != 2) ERROR("Unable to parse hunk header: \"%s\".\n", raw);
+    header.start = a;
+    header.new_length = b;
+
+    return header;
+}
+
 static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
     ASSERT(file != NULL && hunk != NULL);
 
-    // Because we are staging only a single hunk it should start at the same position as the original file
-    int ignore, start = 0, old_length = 0, new_length = 0;
-    int matched = sscanf(hunk->header, hunk_header_fmt, &start, &old_length, &ignore, &new_length);
-    ASSERT(matched >= 3);
+    HunkHeader header = parse_hunk_header(hunk->header);
 
     size_t hunk_length = 0;
     for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
 
     size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->src, file->dst, file->src, file->dst);
-    size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, start, old_length, start, new_length);
+    size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
     char *patch = (char *) malloc(file_header_size + hunk_header_size + hunk_length + 1);
     if (patch == NULL) ERROR("Process is out of memory.\n");
 
     char *ptr = patch;
     ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->src, file->dst, file->src, file->dst);
-    ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, start, old_length, start, new_length);
+    ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
 
     for (size_t i = 0; i < hunk->lines.length; i++) {
         size_t len = strlen(hunk->lines.data[i]);
@@ -162,10 +189,7 @@ static char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
 static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, bool reverse) {
     ASSERT(file != NULL && hunk != NULL);
 
-    // Because we are staging only a single hunk it should start at the same position as the original file
-    int ignore, start = 0, old_length = 0, new_length = 0;
-    int matched = sscanf(hunk->header, hunk_header_fmt, &start, &old_length, &ignore, &new_length);
-    ASSERT(matched >= 3);
+    HunkHeader header = parse_hunk_header(hunk->header);
 
     size_t patch_size = 1;  // space for '\0'
     for (size_t i = 0; i < hunk->lines.length; i++) patch_size += strlen(hunk->lines.data[i]) + 1;
@@ -179,11 +203,11 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
         if (i < range_start || i > range_end) {
             if (!reverse && str[0] == '+') {
                 // skip to prevent it from being applied
-                new_length--;
+                header.new_length--;
                 continue;
             } else if (reverse && str[0] == '-') {
                 // skip because it has already been applied
-                old_length--;
+                header.old_length--;
                 continue;
             }
         }
@@ -194,11 +218,11 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
             if (!reverse && str[0] == '-') {
                 // prevent it from being applied
                 *ptr = ' ';
-                new_length++;
+                header.new_length++;
             } else if (reverse && str[0] == '+') {
                 // "apply", because it has already been applied
                 *ptr = ' ';
-                old_length++;
+                header.old_length++;
             }
         } else {
             if (str[0] == '-' || str[0] == '+') has_changes = true;
@@ -209,7 +233,7 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
     }
     *ptr = '\0';
 
-    if (new_length == 0) {
+    if (header.new_length == 0) {
         // After unstaging this range the file will be left empty, thus in order
         // not to leave empty-yet-added files we have to unstage it
         ASSERT(file->change_type == FC_CREATED);
@@ -224,7 +248,7 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
     }
 
     char *patch;
-    size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, start, old_length, start, new_length);
+    size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
 
     if (file->change_type != FC_CREATED) {
         assert(strcmp(file->src, "/dev/null") != 0);
@@ -254,7 +278,7 @@ static char *create_patch_from_range(const File *file, const Hunk *hunk, size_t 
         ptr += snprintf(ptr, file_header_size + 1, new_file_header_fmt, file->dst, file->dst, file_info.st_mode, file->dst);
     }
 
-    ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, start, old_length, start, new_length);
+    ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
 
     memcpy(ptr, patch_body, patch_size);
     free(patch_body);
