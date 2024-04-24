@@ -26,19 +26,19 @@
         (vec)->capacity = 0; \
     } while (0);
 
-#define VECTOR_PUSH(vec, element)                                                    \
-    do {                                                                             \
-        ASSERT((vec) != NULL);                                                       \
-        if ((vec)->capacity == 0) {                                                  \
-            (vec)->capacity = INITIAL_VECTOR_CAPACITY;                               \
-            (vec)->data = malloc((vec)->capacity * sizeof((element)));               \
-            if ((vec)->data == NULL) OUT_OF_MEMORY();                                \
-        } else if ((vec)->length == (vec)->capacity) {                               \
-            (vec)->capacity *= 2;                                                    \
-            (vec)->data = realloc((vec)->data, (vec)->capacity * sizeof((element))); \
-            if ((vec)->data == NULL) OUT_OF_MEMORY();                                \
-        }                                                                            \
-        (vec)->data[(vec)->length++] = (element);                                    \
+#define VECTOR_PUSH(vec, element)                                                       \
+    do {                                                                                \
+        ASSERT((vec) != NULL);                                                          \
+        if ((vec)->capacity == 0) {                                                     \
+            (vec)->capacity = INITIAL_VECTOR_CAPACITY;                                  \
+            (vec)->data = malloc((vec)->capacity * sizeof(*(vec)->data));               \
+            if ((vec)->data == NULL) OUT_OF_MEMORY();                                   \
+        } else if ((vec)->length == (vec)->capacity) {                                  \
+            (vec)->capacity *= 2;                                                       \
+            (vec)->data = realloc((vec)->data, (vec)->capacity * sizeof(*(vec)->data)); \
+            if ((vec)->data == NULL) OUT_OF_MEMORY();                                   \
+        }                                                                               \
+        (vec)->data[(vec)->length++] = (element);                                       \
     } while (0)
 
 #define VECTOR_POP(vec)            \
