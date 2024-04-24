@@ -6,8 +6,23 @@
 #include "git/state.h"
 
 // Missing ncurses definitions:
+
+// clang-format off
+#define COLOR_BRIGHT_BLACK   8
+#define COLOR_BRIGHT_RED     9
+#define COLOR_BRIGHT_GREEN   10
+#define COLOR_BRIGHT_YELLOW  11
+#define COLOR_BRIGHT_BLUE    12
+#define COLOR_BRIGHT_MAGENTA 13
+#define COLOR_BRIGHT_CYAN    14
+#define COLOR_BRIGHT_WHITE   15
+// clang-format on
+
+#define COLOR_GREY COLOR_BRIGHT_BLACK
+
 #define COLOR_DEFAULT -1
-#define BRIGHT(color) (COLORS > 15 ? (color + 8) : color)
+#define A_NONE 0
+
 #define KEY_ESCAPE 27
 
 #if NCURSES_MOUSE_VERSION > 1
@@ -17,6 +32,8 @@
     #define MOUSE_SCROLL_DOWN 1 << 27
     #define MOUSE_SCROLL_UP 1 << 19
 #endif
+
+typedef enum { LS_SECTION, LS_FILE, LS_HUNK, LS_LINE, LS_ADD_LINE, LS_DEL_LINE, __LS_SIZE } LineStyle;
 
 void ui_init(void);
 void ui_cleanup(void);

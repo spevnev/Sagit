@@ -15,6 +15,7 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
+#include "config.h"
 #include "git/git.h"
 #include "git/state.h"
 #include "ui/action.h"
@@ -30,8 +31,6 @@
 
 #define MIN_WIDTH 80
 #define MIN_HEIGHT 10
-
-#define SCREEN_PADDING 2
 
 static bool running = true;
 static bool show_help = false;
@@ -286,9 +285,9 @@ int main(int argc, char **argv) {
                 case MOUSE_SCROLL_DOWN:
                 case KEY_DOWN:
                 case 'j':
-                    if (cursor < height - 1 - SCREEN_PADDING) cursor++;
+                    if (cursor < height - 1 - SCROLL_PADDING) cursor++;
                     else if (scroll + height < get_lines_length()) {
-                        if (cursor > height - 1 - SCREEN_PADDING) cursor--;
+                        if (cursor > height - 1 - SCROLL_PADDING) cursor--;
                         scroll++;
                     } else if (cursor < height - 1) cursor++;
 
@@ -298,7 +297,7 @@ int main(int argc, char **argv) {
                 case MOUSE_SCROLL_UP:
                 case KEY_UP:
                 case 'k':
-                    if (cursor > SCREEN_PADDING) cursor--;
+                    if (cursor > SCROLL_PADDING) cursor--;
                     else if (scroll > 0) scroll--;
                     else if (cursor > 0) cursor--;
 
