@@ -19,6 +19,9 @@ static char *const CMD_APPLY[]         = {"git", "apply", "--cached", "-"};
 static char *const CMD_APPLY_REVERSE[] = {"git", "apply", "--cached", "--reverse", "-"};
 // clang-format on
 
+static const char *diff_header_fmt = "diff --git a/%s b/%s";
+static const char *diff_header_size_fmt = "diff --git a/%n%*s%n b/%n%*s%n";
+
 // Lines are stored as pointers into the text, thus text must be free after lines.
 // It also modifies text by replacing delimiters with nulls.
 static str_vec split(char *text, char delimiter) {
@@ -45,35 +48,38 @@ static FileVec parse_diff(char *diff) {
     FileVec files = {0};
     size_t i = 0;
     while (i < lines.length) {
-        // check diff header
-        ASSERT(strncmp(lines.data[i], "diff --git", 10) == 0);
-
-        // skip header
-        while (i < lines.length && lines.data[i][0] != '-') i++;
-        if (i == lines.length) break;
-
         File file = {0};
         file.is_folded = true;
-        file.src = lines.data[i++] + 4;
-        file.dst = lines.data[i++] + 4;
+        file.change_type = FC_MODIFIED;
 
-        if (strcmp(file.src + 2, file.dst + 2) == 0) file.change_type = FC_MODIFIED;
-        else if (strcmp(file.src, "/dev/null") == 0) file.change_type = FC_CREATED;
-        else if (strcmp(file.dst, "/dev/null") == 0) file.change_type = FC_DELETED;
-        else file.change_type = FC_RENAMED;
+        int src_begin, src_end, dst_begin, dst_end;
+        int matched = sscanf(lines.data[i], diff_header_size_fmt, &src_begin, &src_end, &dst_begin, &dst_end);
+        ASSERT(matched == 0);  // %n don't count as matches
 
-        while (i < lines.length) {
-            if (lines.data[i][0] == 'd') break;
-            ASSERT(lines.data[i][0] == '@');  // hunk header
+        file.src = lines.data[i] + src_begin;
+        lines.data[i][src_end] = '\0';
+        file.dst = lines.data[i] + dst_begin;
+        lines.data[i][dst_end] = '\0';
 
+        while (i < lines.length && lines.data[i][0] != '@') {
+            if (strncmp(lines.data[i], "new file mode", 13) == 0) file.change_type = FC_CREATED;
+            if (strncmp(lines.data[i], "deleted file mode", 17) == 0) file.change_type = FC_DELETED;
+            if (strncmp(lines.data[i], "--- ", 4) == 0) {
+                if (file.change_type == FC_CREATED) ASSERT(strcmp(lines.data[i] + 4, "/dev/null") == 0);
+                else ASSERT(strcmp(lines.data[i] + 6, file.src) == 0);
+            }
+            if (strncmp(lines.data[i], "+++ ", 4) == 0) {
+                if (file.change_type == FC_DELETED) ASSERT(strcmp(lines.data[i] + 4, "/dev/null") == 0);
+                else ASSERT(strcmp(lines.data[i] + 6, file.dst) == 0);
+            }
+            i++;
+        }
+        if (strcmp(file.src, file.dst) != 0) file.change_type = FC_RENAMED;
+
+        while (i < lines.length && lines.data[i][0] == '@') {
             Hunk hunk = {0};
             hunk.header = lines.data[i++];
-
-            while (i < lines.length) {
-                if (lines.data[i][0] == '@' || lines.data[i][0] == 'd') break;
-                VECTOR_PUSH(&hunk.lines, lines.data[i++]);
-            }
-
+            while (i < lines.length && lines.data[i][0] != '@' && lines.data[i][0] != 'd') VECTOR_PUSH(&hunk.lines, lines.data[i++]);
             VECTOR_PUSH(&file.hunks, hunk);
         }
 

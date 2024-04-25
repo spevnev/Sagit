@@ -22,6 +22,7 @@
 #include "ui/help.h"
 #include "ui/ui.h"
 #include "utils/error.h"
+#include "utils/vector.h"
 #ifdef __linux__
     #include <sys/inotify.h>
 #endif
@@ -35,7 +36,7 @@
 static bool running = true;
 static bool show_help = false;
 static State state = {0};
-static size_vec hunk_idxs = {0};
+static int_vec hunk_idxs = {0};
 
 #ifdef __linux__
 static int inotify_fd = -1;

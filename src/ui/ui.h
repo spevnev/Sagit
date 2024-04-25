@@ -39,7 +39,7 @@ void ui_init(void);
 void ui_cleanup(void);
 
 // Renders to buffer and populates hunk_idxs
-void render(State *state, size_vec *hunk_idxs);
+void render(State *state, int_vec *hunk_idxs);
 // Outputs the buffer, returns number of wrapped lines before cursor
 int output(int scroll, int cursor, int selection_start, int selection_end);
 // Calls action associated with `ch` on element at position `y`

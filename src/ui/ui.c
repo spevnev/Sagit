@@ -67,7 +67,7 @@ static void init_styles(void) {
     }
 }
 
-static void render_files(size_vec *hunk_idxs, const FileVec *files, action_t *file_action, action_t *hunk_action, action_t *line_action) {
+static void render_files(int_vec *hunk_idxs, const FileVec *files, action_t *file_action, action_t *hunk_action, action_t *line_action) {
     ASSERT(files != NULL);
 
     size_vec sorted_indexes = sort_files(files);
@@ -77,27 +77,33 @@ static void render_files(size_vec *hunk_idxs, const FileVec *files, action_t *fi
         if (file->change_type == FC_DELETED) {
             // Don't display deleted files' content
             VECTOR_PUSH(hunk_idxs, lines.length);
-            ADD_LINE(file_action, file, LS_FILE, 0, " deleted %s", file->src + 2);
+            ADD_LINE(file_action, file, LS_FILE, false, " deleted %s", file->src);
             continue;
         }
 
-        ADD_LINE(file_action, file, LS_FILE, 0, "%s", FOLD_CHAR(file->is_folded));
+        ADD_LINE(file_action, file, LS_FILE, false, "%s", FOLD_CHAR(file->is_folded));
         switch (file->change_type) {
             case FC_MODIFIED:
-                APPEND_LINE("modified %s", file->src + 2);
+                APPEND_LINE("modified %s", file->src);
                 break;
             case FC_CREATED:
                 VECTOR_PUSH(hunk_idxs, lines.length);
-                APPEND_LINE("created %s", file->dst + 2);
+                APPEND_LINE("created %s", file->dst);
                 break;
             case FC_RENAMED:
-                APPEND_LINE("renamed %s -> %s", file->src + 2, file->dst + 2);
+                APPEND_LINE("renamed %s -> %s", file->src, file->dst);
                 break;
             default:
                 UNREACHABLE();
         }
 
         if (file->is_folded) continue;
+
+        if (file->change_type == FC_CREATED && file->hunks.length == 0) {
+            ADD_LINE(NULL, NULL, LS_LINE, false, "<empty file>");
+            continue;
+        }
+
         for (size_t i = 0; i < file->hunks.length; i++) {
             Hunk *hunk = &file->hunks.data[i];
 
@@ -107,7 +113,7 @@ static void render_files(size_vec *hunk_idxs, const FileVec *files, action_t *fi
             if (file->change_type != FC_CREATED) {
                 // Created files always have one hunk, so there is no need to render it
                 VECTOR_PUSH(hunk_idxs, lines.length);
-                ADD_LINE(hunk_action, args, LS_HUNK, 0, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
+                ADD_LINE(hunk_action, args, LS_HUNK, false, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
                 if (hunk->is_folded) continue;
             }
 
@@ -125,7 +131,7 @@ static void render_files(size_vec *hunk_idxs, const FileVec *files, action_t *fi
                 args->hunk_y = hunk_y;
                 args->line = j;
 
-                ADD_LINE(line_action, args, style, 1, "%s", hunk->lines.data[j]);
+                ADD_LINE(line_action, args, style, true, "%s", hunk->lines.data[j]);
             }
         }
     }
@@ -159,7 +165,7 @@ void ui_cleanup(void) {
     VECTOR_FREE(&lines);
 }
 
-void render(State *state, size_vec *hunk_idxs) {
+void render(State *state, int_vec *hunk_idxs) {
     ASSERT(state != NULL);
 
     ctxt_reset(&ctxt);

@@ -38,14 +38,14 @@ int unstaged_file_action(void *_file, const ActionArgs *args) {
         switch (file->change_type) {
             case FC_MODIFIED:
             case FC_DELETED:
-                git_stage_file(file->src + 2);
+                git_stage_file(file->src);
                 break;
             case FC_CREATED:
-                git_stage_file(file->dst + 2);
+                git_stage_file(file->dst);
                 break;
             case FC_RENAMED:
-                git_stage_file(file->src + 2);
-                git_stage_file(file->dst + 2);
+                git_stage_file(file->src);
+                git_stage_file(file->dst);
                 break;
             default:
                 UNREACHABLE();
@@ -68,14 +68,14 @@ int staged_file_action(void *_file, const ActionArgs *args) {
         switch (file->change_type) {
             case FC_MODIFIED:
             case FC_DELETED:
-                git_unstage_file(file->src + 2);
+                git_unstage_file(file->src);
                 break;
             case FC_CREATED:
-                git_unstage_file(file->dst + 2);
+                git_unstage_file(file->dst);
                 break;
             case FC_RENAMED:
-                git_unstage_file(file->src + 2);
-                git_unstage_file(file->dst + 2);
+                git_unstage_file(file->src);
+                git_unstage_file(file->dst);
                 break;
             default:
                 UNREACHABLE();

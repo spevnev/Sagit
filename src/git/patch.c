@@ -11,9 +11,10 @@
 #include "utils/memory.h"
 #include "utils/vector.h"
 
-static const char *file_header_fmt = "diff --git %s %s\n--- %s\n+++ %s\n";
+static const char *file_header_fmt = "diff --git %s %s\n--- a/%s\n+++ b/%s\n";
+static const char *new_file_header_fmt = "diff --git %s %s\nnew file mode %o\n--- /dev/null\n+++ b/%s\n";
+static const char *del_file_header_fmt = "diff --git %s %s\ndeleted file mode %o\n--- a/%s\n+++ /dev/null\n";
 static const char *hunk_header_fmt = "@@ -%d,%d +%d,%d @@\n";
-static const char *new_file_header_fmt = "diff --git %s %s\nnew file mode %o\n--- /dev/null\n+++ %s\n";
 
 typedef struct {
     int start;
@@ -89,11 +90,9 @@ File create_file_from_untracked(MemoryContext *ctxt, const char *file_path) {
     VECTOR_PUSH(&hunks, hunk);
 
     size_t length = strlen(file_path);
-    char *dst_path = (char *) ctxt_alloc(ctxt, 2 + length + 1);
-    dst_path[0] = 'b';
-    dst_path[1] = '/';
-    memcpy(dst_path + 2, file_path, length);
-    dst_path[2 + length] = '\0';
+    char *dst_path = (char *) ctxt_alloc(ctxt, length + 1);
+    memcpy(dst_path, file_path, length);
+    dst_path[length] = '\0';
 
     return (File){1, FC_CREATED, "/dev/null", dst_path, hunks};
 }
@@ -177,7 +176,7 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
         // After unstaging this range the file will be left empty, thus in order
         // not to leave empty-yet-added files we have to unstage it
         ASSERT(file->change_type == FC_CREATED);
-        git_unstage_file(file->dst + 2);
+        git_unstage_file(file->dst);
         free(patch_body);
         return NULL;
     }
@@ -191,8 +190,6 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
     size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
 
     if (file->change_type != FC_CREATED) {
-        ASSERT(strcmp(file->src, "/dev/null") != 0);
-
         size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->src, file->dst, file->src, file->dst);
         patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
         if (patch == NULL) OUT_OF_MEMORY();
@@ -208,8 +205,7 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
         ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->dst, file->dst, file->dst, file->dst);
     } else {  // Partial staging of untracked file requires "new file mode"
         struct stat file_info = {0};
-        const char *file_path = file->dst + 2;
-        if (stat(file_path, &file_info) == -1) ERROR("Unable to stat \"%s\": %s.\n", file_path, strerror(errno));
+        if (stat(file->dst, &file_info) == -1) ERROR("Unable to stat \"%s\": %s.\n", file->dst, strerror(errno));
 
         size_t file_header_size = snprintf(NULL, 0, new_file_header_fmt, file->dst, file->dst, file_info.st_mode, file->dst);
         patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);

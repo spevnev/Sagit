@@ -10,7 +10,7 @@ static void swap(size_t *arr, size_t i, size_t j) {
     arr[j] = temp;
 }
 
-static int compare_files(const File *files, size_t i, size_t j) { return strcmp(files[i].dst + 2, files[j].dst + 2); }
+static int compare_files(const File *files, size_t i, size_t j) { return strcmp(files[i].dst, files[j].dst); }
 
 static void quicksort(const File *files, size_t *arr, size_t l, size_t r) {
     if (l >= r) return;
