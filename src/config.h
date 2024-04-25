@@ -3,11 +3,12 @@
 
 #include "ui/ui.h"
 
+// number of lines before the edge of the screen when scrolling starts
 #define SCROLL_PADDING 2
 
 // clang-format off
 static const int styles[__LS_SIZE][3] = {
-    //              foreground           background     attribute
+    //              foreground           background     attribute(man curs_attr)
     [LS_SECTION]  = {COLOR_WHITE,        COLOR_DEFAULT, A_BOLD},
     [LS_FILE]     = {COLOR_WHITE,        COLOR_DEFAULT, A_ITALIC},
     [LS_HUNK]     = {COLOR_BRIGHT_CYAN,  COLOR_DEFAULT, A_NONE},

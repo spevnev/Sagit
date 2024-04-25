@@ -6,12 +6,14 @@ Sagit is a small CLI utility which aims to make `git add` more flexible by allow
 
 Requirements: C compiler, ncursesw, pkg-config
 
-Build with `make` and install with `make install`.
+```console
+$ make install
+```
 
 Note that the default binary installation path is `/usr/local/bin`, but it can be changed:
 
 ```console
-make install BIN_PATH="/home/example_user/bin"
+$ make install BIN_PATH="/home/example_user/bin"
 ```
 
 ## Usage
@@ -19,7 +21,7 @@ make install BIN_PATH="/home/example_user/bin"
 Either use it directly or alias to e.g. sadd:
 
 ```console
-git config alias.sadd '!sagit'
+$ git config alias.sadd '!sagit'
 ```
 
 To see keybindings press `h`.
@@ -48,10 +50,15 @@ You can add keybinding like this to open full screen terminal in VSCode (to `key
 
 NOTE: `\u000D` acts like Enter and is used to run the command
 
+### Configuring
+
+Configuration is done by modifying `src/config.h` and rebuilding. \
+If changes didn't apply, try running `make clean` before rebuilding again.
+
 ## Uninstalling
 
 Don't forget to set the same `BIN_PATH`.
 
 ```console
-make uninstall
+$ make uninstall BIN_PATH="/home/example_user/bin"
 ```
