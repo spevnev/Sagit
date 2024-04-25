@@ -118,7 +118,7 @@ bool poll_events(State *state) {
             }
 
             update_git_state(state);
-            render(state, NULL);
+            render(state);
             return false;
         }
     }

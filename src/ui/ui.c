@@ -26,6 +26,7 @@ VECTOR_TYPEDEF(LineVec, Line);
 static MemoryContext ctxt = {0};
 static LineVec lines = {0};
 static int line_styles[__LS_SIZE] = {0};
+static int_vec hunk_indexes = {0};
 
 #define ADD_LINE(action, arg, style, is_selectable, ...)                   \
     do {                                                                   \
@@ -67,7 +68,7 @@ static void init_styles(void) {
     }
 }
 
-static void render_files(int_vec *hunk_idxs, const FileVec *files, action_t *file_action, action_t *hunk_action, action_t *line_action) {
+static void render_files(const FileVec *files, action_t *file_action, action_t *hunk_action, action_t *line_action) {
     ASSERT(files != NULL);
 
     size_vec sorted_indexes = sort_files(files);
@@ -76,7 +77,7 @@ static void render_files(int_vec *hunk_idxs, const FileVec *files, action_t *fil
 
         if (file->change_type == FC_DELETED) {
             // Don't display deleted files' content
-            VECTOR_PUSH(hunk_idxs, lines.length);
+            VECTOR_PUSH(&hunk_indexes, lines.length);
             ADD_LINE(file_action, file, LS_FILE, false, " deleted %s", file->src);
             continue;
         }
@@ -96,7 +97,7 @@ static void render_files(int_vec *hunk_idxs, const FileVec *files, action_t *fil
                 UNREACHABLE();
         }
 
-        if (file->is_folded || file->change_type == FC_CREATED) VECTOR_PUSH(hunk_idxs, lines.length - 1);
+        if (file->is_folded || file->change_type == FC_CREATED) VECTOR_PUSH(&hunk_indexes, lines.length - 1);
 
         if (file->is_folded) continue;
 
@@ -118,7 +119,7 @@ static void render_files(int_vec *hunk_idxs, const FileVec *files, action_t *fil
             args->hunk = hunk;
             if (file->change_type != FC_CREATED) {
                 // Created files always have one hunk, so there is no need to render it
-                VECTOR_PUSH(hunk_idxs, lines.length);
+                VECTOR_PUSH(&hunk_indexes, lines.length);
                 ADD_LINE(hunk_action, args, LS_HUNK, false, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
                 if (hunk->is_folded) continue;
             }
@@ -169,24 +170,25 @@ void ui_cleanup(void) {
 
     ctxt_free(&ctxt);
     VECTOR_FREE(&lines);
+    VECTOR_FREE(&hunk_indexes);
 }
 
-void render(State *state, int_vec *hunk_idxs) {
+void render(State *state) {
     ASSERT(state != NULL);
 
     ctxt_reset(&ctxt);
     VECTOR_RESET(&lines);
-    VECTOR_RESET(hunk_idxs);
+    VECTOR_RESET(&hunk_indexes);
 
     if (state->unstaged.files.length > 0) {
         ADD_LINE(&section_action, &state->unstaged, LS_SECTION, 0, "%sUnstaged changes:", FOLD_CHAR(state->unstaged.is_folded));
-        if (!state->unstaged.is_folded) render_files(hunk_idxs, &state->unstaged.files, &unstaged_file_action, &unstaged_hunk_action, &unstaged_line_action);
+        if (!state->unstaged.is_folded) render_files(&state->unstaged.files, &unstaged_file_action, &unstaged_hunk_action, &unstaged_line_action);
         EMPTY_LINE();
     }
 
     if (state->staged.files.length > 0) {
         ADD_LINE(&section_action, &state->staged, LS_SECTION, 0, "%sStaged changes:", FOLD_CHAR(state->staged.is_folded));
-        if (!state->staged.is_folded) render_files(hunk_idxs, &state->staged.files, &staged_file_action, &staged_hunk_action, &staged_line_action);
+        if (!state->staged.is_folded) render_files(&state->staged.files, &staged_file_action, &staged_hunk_action, &staged_line_action);
         EMPTY_LINE();
     }
 }
@@ -230,6 +232,25 @@ int invoke_action(int y, int ch, int range_start, int range_end) {
 
     ActionArgs args = {ch, range_start, range_end};
     return action(lines.data[y].action_arg, &args);
+}
+
+int get_prev_hunk(int y) {
+    int hunk_y = -1;
+    for (size_t i = 0; i < hunk_indexes.length; i++) {
+        if (hunk_indexes.data[i] >= y) break;
+        hunk_y = hunk_indexes.data[i];
+    }
+
+    if (hunk_y >= y) return -1;
+    return hunk_y;
+}
+
+int get_next_hunk(int y) {
+    for (size_t i = 0; i < hunk_indexes.length; i++) {
+        if (hunk_indexes.data[i] > y) return hunk_indexes.data[i];
+    }
+
+    return -1;
 }
 
 int get_lines_length(void) { return lines.length; }

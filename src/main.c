@@ -29,13 +29,11 @@
 static bool running = true;
 static bool show_help = false;
 static State state = {0};
-static int_vec hunk_idxs = {0};
 
 static void cleanup(void) {
     poll_cleanup();
     ui_cleanup();
     free_state(&state);
-    VECTOR_FREE(&hunk_idxs);
 }
 
 static void stop_running(int signal) {
@@ -119,7 +117,7 @@ int main(int argc, char **argv) {
     poll_init();
     ui_init();
     atexit(cleanup);
-    render(&state, &hunk_idxs);
+    render(&state);
 
     int scroll = 0, cursor = 0, selection = -1;
     while (running) {
@@ -188,16 +186,13 @@ int main(int argc, char **argv) {
                     if (!is_selectable(scroll + cursor)) selection = -1;
 
                     break;
-                case 'J':
-                    for (size_t i = 0; i < hunk_idxs.length; i++) {
-                        if (hunk_idxs.data[i] <= y) continue;
+                case 'J': {
+                    int hunk_y = get_next_hunk(y);
+                    if (hunk_y == -1) break;
 
-                        if (hunk_idxs.data[i] < scroll + getmaxy(stdscr) - SCROLL_PADDING) cursor = hunk_idxs.data[i] - scroll;
-                        else scroll = hunk_idxs.data[i] - cursor;
-
-                        break;
-                    }
-                    break;
+                    if (hunk_y < scroll + getmaxy(stdscr) - SCROLL_PADDING) cursor = hunk_y - scroll;
+                    else scroll = hunk_y - cursor;
+                } break;
                 case MOUSE_SCROLL_UP:
                 case KEY_UP:
                 case 'k':
@@ -209,12 +204,8 @@ int main(int argc, char **argv) {
 
                     break;
                 case 'K': {
-                    int hunk_y = -1;
-                    for (size_t i = 0; i < hunk_idxs.length; i++) {
-                        if (hunk_idxs.data[i] >= y) break;
-                        hunk_y = hunk_idxs.data[i];
-                    }
-                    if (hunk_y == -1 || hunk_y >= y) break;
+                    int hunk_y = get_prev_hunk(y);
+                    if (hunk_y == -1) break;
 
                     if (hunk_y <= SCROLL_PADDING) {
                         scroll = 0;
@@ -228,9 +219,9 @@ int main(int argc, char **argv) {
                         if (result & AC_UPDATE_STATE) {
                             poll_ignore_change();
                             update_git_state(&state);
-                            render(&state, &hunk_idxs);
+                            render(&state);
                         }
-                        if (result & AC_RERENDER) render(&state, &hunk_idxs);
+                        if (result & AC_RERENDER) render(&state);
                         if (result & AC_TOGGLE_SELECTION) selection = selection == -1 ? y : -1;
                     }
             }
