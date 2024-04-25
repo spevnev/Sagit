@@ -79,7 +79,10 @@ static FileVec parse_diff(char *diff) {
         while (i < lines.length && lines.data[i][0] == '@') {
             Hunk hunk = {0};
             hunk.header = lines.data[i++];
-            while (i < lines.length && lines.data[i][0] != '@' && lines.data[i][0] != 'd') VECTOR_PUSH(&hunk.lines, lines.data[i++]);
+            while (i < lines.length && lines.data[i][0] != '@' && lines.data[i][0] != 'd') {
+                VECTOR_PUSH(&hunk.lines, lines.data[i]);
+                i++;
+            }
             VECTOR_PUSH(&file.hunks, hunk);
         }
 
@@ -102,7 +105,6 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
     int fd = open(file_path, O_RDONLY);
     if (fd == -1) ERROR("Unable to open \"%s\": %s.\n", file_path, strerror(errno));
 
-    // TODO: read in blocks instead?
     char *buffer = (char *) malloc(size);
     if (buffer == NULL) OUT_OF_MEMORY();
     if (read(fd, buffer, size) != (ssize_t) size) ERROR("Unable to read \"%s\": %s.\n", file_path, strerror((errno)));
@@ -142,6 +144,19 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
     bool is_binary = exit_code != 0;
 
     return (File){true, is_binary, FC_CREATED, dst_path, dst_path, hunks};
+}
+
+static void add_untracked_files(MemoryContext *ctxt, FileVec *unstaged) {
+    char *raw_file_paths = gexecr(CMD_UNTRACKED);
+    str_vec untracked_file_paths = split(raw_file_paths, '\n');
+
+    for (size_t i = 0; i < untracked_file_paths.length; i++) {
+        File file = create_file_from_untracked(ctxt, untracked_file_paths.data[i]);
+        VECTOR_PUSH(unstaged, file);
+    }
+
+    VECTOR_FREE(&untracked_file_paths);
+    free(raw_file_paths);
 }
 
 static void merge_files(const FileVec *old_files, FileVec *new_files) {
@@ -190,18 +205,8 @@ void get_git_state(State *state) {
     state->unstaged.raw = gexecr(CMD_UNSTAGED);
     state->unstaged.files = parse_diff(state->unstaged.raw);
 
-    // TODO: create a separate function
-    char *raw_file_paths = gexecr(CMD_UNTRACKED);
-    str_vec untracked_file_paths = split(raw_file_paths, '\n');
-
     ctxt_init(&state->untracked_ctxt);
-    for (size_t i = 0; i < untracked_file_paths.length; i++) {
-        File file = create_file_from_untracked(&state->untracked_ctxt, untracked_file_paths.data[i]);
-        VECTOR_PUSH(&state->unstaged.files, file);
-    }
-
-    VECTOR_FREE(&untracked_file_paths);
-    free(raw_file_paths);
+    add_untracked_files(&state->untracked_ctxt, &state->unstaged.files);
 
     state->staged.raw = gexecr(CMD_STAGED);
     state->staged.files = parse_diff(state->staged.raw);
@@ -218,17 +223,8 @@ void update_git_state(State *state) {
     state->unstaged.files = unstaged_files;
     state->unstaged.raw = unstaged_raw;
 
-    char *raw_file_paths = gexecr(CMD_UNTRACKED);
-    str_vec untracked_file_paths = split(raw_file_paths, '\n');
-
     ctxt_reset(&state->untracked_ctxt);
-    for (size_t i = 0; i < untracked_file_paths.length; i++) {
-        File file = create_file_from_untracked(&state->untracked_ctxt, untracked_file_paths.data[i]);
-        VECTOR_PUSH(&state->unstaged.files, file);
-    }
-
-    VECTOR_FREE(&untracked_file_paths);
-    free(raw_file_paths);
+    add_untracked_files(&state->untracked_ctxt, &state->unstaged.files);
 
     char *staged_raw = gexecr(CMD_STAGED);
     FileVec staged_files = parse_diff(staged_raw);
