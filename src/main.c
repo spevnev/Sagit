@@ -2,20 +2,16 @@
     #define _DARWIN_C_SOURCE
 #endif
 #define _XOPEN_SOURCE 700
-#define _DEFAULT_SOURCE
 
-#include <dirent.h>
 #include <errno.h>
 #include <ncurses.h>
-#include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <termios.h>
-#include <unistd.h>
 #include "config.h"
+#include "event.h"
 #include "git/git.h"
 #include "git/state.h"
 #include "ui/action.h"
@@ -23,9 +19,6 @@
 #include "ui/ui.h"
 #include "utils/error.h"
 #include "utils/vector.h"
-#ifdef __linux__
-    #include <sys/inotify.h>
-#endif
 
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
@@ -33,26 +26,13 @@
 #define MIN_WIDTH 80
 #define MIN_HEIGHT 10
 
-#define MAX_PATH_LENGTH 4096
-
 static bool running = true;
 static bool show_help = false;
 static State state = {0};
 static int_vec hunk_idxs = {0};
 
-#ifdef __linux__
-static int inotify_fd = -1;
-static bool ignore_inotify = false;
-
-static struct pollfd poll_fds[2];
-#else
-static struct pollfd poll_fds[1];
-#endif
-
 static void cleanup(void) {
-#ifdef __linux__
-    close(inotify_fd);
-#endif
+    poll_cleanup();
     ui_cleanup();
     free_state(&state);
     VECTOR_FREE(&hunk_idxs);
@@ -71,94 +51,10 @@ static void resize(int signal) {
     if (resizeterm(win.ws_row, win.ws_col) == ERR) ERROR("Unable to resize terminal window: %s.\n", strerror(errno));
 }
 
-#ifdef __linux__
-// Recursively adds directory and its subdirectories to inotify.
-// NOTE: modifies path, which must fit longest possible path.
-static void watch_dir(char *path) {
-    ASSERT(path != NULL);
-    if (is_ignored(path)) return;
-
-    if (inotify_add_watch(inotify_fd, path, IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO) == -1)
-        ERROR("Unable to watch a directory \"%s\": %s.\n", path, strerror(errno));
-
-    DIR *dir = opendir(path);
-    if (dir == NULL) ERROR("Unable to open a directory \"%s\": %s.\n", path, strerror(errno));
-
-    size_t path_len = strlen(path);
-    path[path_len] = '/';
-
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type != DT_DIR || strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) continue;
-
-        size_t name_length = strlen(entry->d_name);
-        ASSERT(path_len + name_length + 1 <= MAX_PATH_LENGTH);
-        memcpy(path + path_len + 1, entry->d_name, name_length);
-        path[path_len + 1 + name_length] = '\0';
-
-        watch_dir(path);
-    }
-
-    closedir(dir);
-}
-#endif
-
-bool poll_events(void) {
-    int events = poll(poll_fds, sizeof(poll_fds) / sizeof(poll_fds[0]), -1);
-    if (events == -1) {
-        if (errno == EINTR) return false;
-        ERROR("Unable to poll: %s.\n", strerror(errno));
-    }
-
-#ifdef __linux__
-    static char path_buffer[4096];
-    static char event_buffer[1024];
-
-    if (poll_fds[1].revents & POLLIN) {
-        ssize_t bytes;
-        int new_dir = 0;
-        while ((bytes = read(inotify_fd, event_buffer, sizeof(event_buffer))) > 0) {
-            struct inotify_event *event = (struct inotify_event *) event_buffer;
-            if (new_dir) break;
-            for (int i = events; i >= 0; i--) {
-                if ((event->mask & IN_CREATE) && (event->mask & IN_ISDIR)) {
-                    new_dir = 1;
-                    break;
-                }
-                event++;
-            }
-            continue;
-        }
-        if (bytes == -1 && errno != EAGAIN) ERROR("Unable to read inotify event.\n");
-        if (new_dir) {
-            path_buffer[0] = '.';
-            path_buffer[1] = '\0';
-            watch_dir(path_buffer);
-        }
-
-        if (ignore_inotify) {
-            ignore_inotify = false;
-        } else {
-            // if a key is pressed during external update, ignore that key
-            if (poll_fds[0].revents & POLLIN) {
-                while (getch() != ERR) continue;
-            }
-
-            update_git_state(&state);
-            render(&state, &hunk_idxs);
-            return false;
-        }
-    }
-#endif
-
-    return true;
-}
-
-// TODO: rename
 void handle_info(void) {
     refresh();
 
-    if (!poll_events()) return;
+    if (!poll_events(&state)) return;
 
     int ch;
     while ((ch = getch()) != ERR) {
@@ -172,7 +68,7 @@ void handle_help(void) {
     output_help(help_scroll);
     refresh();
 
-    if (!poll_events()) return;
+    if (!poll_events(&state)) return;
 
     int ch;
     while ((ch = getch()) != ERR) {
@@ -220,15 +116,7 @@ int main(int argc, char **argv) {
     action.sa_handler = resize;
     sigaction(SIGWINCH, &action, NULL);
 
-    poll_fds[0] = (struct pollfd){STDIN_FILENO, POLLIN, 0};
-#ifdef __linux__
-    inotify_fd = inotify_init1(IN_NONBLOCK);
-    poll_fds[1] = (struct pollfd){inotify_fd, POLLIN, 0};
-
-    char path_buffer[MAX_PATH_LENGTH] = ".";
-    watch_dir(path_buffer);
-#endif
-
+    poll_init();
     ui_init();
     atexit(cleanup);
     render(&state, &hunk_idxs);
@@ -270,7 +158,7 @@ int main(int argc, char **argv) {
         move(cursor, 0);
         refresh();
 
-        if (!poll_events()) continue;
+        if (!poll_events(&state)) continue;
 
         int ch;
         while ((ch = getch()) != ERR) {
@@ -338,9 +226,7 @@ int main(int argc, char **argv) {
                     if (y < get_lines_length()) {
                         int result = invoke_action(y, ch, selection_start, selection_end);
                         if (result & AC_UPDATE_STATE) {
-#ifdef __linux__
-                            ignore_inotify = true;
-#endif
+                            poll_ignore_change();
                             update_git_state(&state);
                             render(&state, &hunk_idxs);
                         }
