@@ -48,14 +48,12 @@ static FileVec parse_diff(char *diff) {
     FileVec files = {0};
     size_t i = 0;
     while (i < lines.length) {
+        int src_begin, src_end, dst_begin, dst_end;
+        if (sscanf(lines.data[i], diff_header_size_fmt, &src_begin, &src_end, &dst_begin, &dst_end) != 0) ERROR("Unable to parse file diff header.\n");
+
         File file = {0};
         file.is_folded = true;
         file.change_type = FC_MODIFIED;
-
-        int src_begin, src_end, dst_begin, dst_end;
-        int matched = sscanf(lines.data[i], diff_header_size_fmt, &src_begin, &src_end, &dst_begin, &dst_end);
-        ASSERT(matched == 0);  // %n don't count as matches
-
         file.src = lines.data[i] + src_begin;
         lines.data[i][src_end] = '\0';
         file.dst = lines.data[i] + dst_begin;

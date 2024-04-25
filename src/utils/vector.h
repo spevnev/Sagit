@@ -49,5 +49,6 @@
 
 VECTOR_TYPEDEF(str_vec, char *);
 VECTOR_TYPEDEF(size_vec, size_t);
+VECTOR_TYPEDEF(int_vec, int);
 
 #endif  // VECTOR_H
