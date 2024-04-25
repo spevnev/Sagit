@@ -1,19 +1,10 @@
-#if __APPLE__
-    #define _DARWIN_C_SOURCE
-#endif
-#define _XOPEN_SOURCE 700
-
-#include <errno.h>
 #include <ncurses.h>
-#include <signal.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
 #include "config.h"
 #include "event.h"
 #include "git/git.h"
 #include "git/state.h"
+#include "signals.h"
 #include "ui/action.h"
 #include "ui/help.h"
 #include "ui/ui.h"
@@ -26,7 +17,6 @@
 #define MIN_WIDTH 80
 #define MIN_HEIGHT 10
 
-static bool running = true;
 static bool show_help = false;
 static State state = {0};
 
@@ -36,18 +26,6 @@ static void cleanup(void) {
     free_state(&state);
 }
 
-static void stop_running(int signal) {
-    ASSERT(signal == SIGINT);
-    running = false;
-}
-
-static void resize(int signal) {
-    ASSERT(signal == SIGWINCH);
-
-    struct winsize win;
-    ioctl(0, TIOCGWINSZ, &win);
-    if (resizeterm(win.ws_row, win.ws_col) == ERR) ERROR("Unable to resize terminal window: %s.\n", strerror(errno));
-}
 
 void handle_info(void) {
     refresh();
@@ -106,14 +84,7 @@ int main(int argc, char **argv) {
     if (!is_git_initialized()) ERROR("Git is not initialized in the current directory.\n");
     get_git_state(&state);
 
-    struct sigaction action = {0};
-
-    action.sa_handler = stop_running;
-    sigaction(SIGINT, &action, NULL);
-
-    action.sa_handler = resize;
-    sigaction(SIGWINCH, &action, NULL);
-
+    setup_signal_handlers();
     poll_init();
     ui_init();
     atexit(cleanup);
