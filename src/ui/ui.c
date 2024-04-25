@@ -99,6 +99,11 @@ static void render_files(int_vec *hunk_idxs, const FileVec *files, action_t *fil
 
         if (file->is_folded) continue;
 
+        if (file->is_binary) {
+            ADD_LINE(NULL, NULL, LS_LINE, false, "<binary file>");
+            continue;
+        }
+
         if (file->change_type == FC_CREATED && file->hunks.length == 0) {
             ADD_LINE(NULL, NULL, LS_LINE, false, "<empty file>");
             continue;

@@ -17,6 +17,7 @@ typedef enum { FC_CREATED = 1, FC_DELETED, FC_MODIFIED, FC_RENAMED } FileChange;
 
 typedef struct {
     bool is_folded;
+    bool is_binary;
     FileChange change_type;
     const char *src;
     const char *dst;

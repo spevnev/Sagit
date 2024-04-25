@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include "git/exec.h"
 #include "git/patch.h"
 #include "git/state.h"
@@ -60,6 +61,7 @@ static FileVec parse_diff(char *diff) {
         lines.data[i][dst_end] = '\0';
 
         while (i < lines.length && lines.data[i][0] != '@') {
+            if (strncmp(lines.data[i], "Binary files ", 13) == 0) file.is_binary = true;
             if (strncmp(lines.data[i], "new file mode", 13) == 0) file.change_type = FC_CREATED;
             if (strncmp(lines.data[i], "deleted file mode", 17) == 0) file.change_type = FC_DELETED;
             if (strncmp(lines.data[i], "--- ", 4) == 0) {
@@ -136,7 +138,10 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
     memcpy(dst_path, file_path, length);
     dst_path[length] = '\0';
 
-    return (File){true, false, FC_CREATED, dst_path, dst_path, hunks};
+    int exit_code = gexec(CMD("git", "grep", "-I", "--name-only", "--untracked", "-e", ".", "--", dst_path));
+    bool is_binary = exit_code != 0;
+
+    return (File){true, is_binary, FC_CREATED, dst_path, dst_path, hunks};
 }
 
 static void merge_files(const FileVec *old_files, FileVec *new_files) {
