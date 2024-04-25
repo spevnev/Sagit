@@ -1,4 +1,5 @@
 #include "action.h"
+#include <string.h>
 #include "git/git.h"
 #include "git/state.h"
 #include "utils/error.h"
@@ -38,10 +39,9 @@ int unstaged_file_action(void *_file, const ActionArgs *args) {
         switch (file->change_type) {
             case FC_MODIFIED:
             case FC_DELETED:
-                git_stage_file(file->src);
-                break;
             case FC_CREATED:
-                git_stage_file(file->dst);
+                ASSERT(strcmp(file->src, file->dst) == 0);
+                git_stage_file(file->src);
                 break;
             case FC_RENAMED:
                 git_stage_file(file->src);
@@ -68,10 +68,9 @@ int staged_file_action(void *_file, const ActionArgs *args) {
         switch (file->change_type) {
             case FC_MODIFIED:
             case FC_DELETED:
-                git_unstage_file(file->src);
-                break;
             case FC_CREATED:
-                git_unstage_file(file->dst);
+                ASSERT(strcmp(file->src, file->dst) == 0);
+                git_unstage_file(file->src);
                 break;
             case FC_RENAMED:
                 git_unstage_file(file->src);

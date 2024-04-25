@@ -6,7 +6,7 @@
 #define SCROLL_PADDING 2
 
 // clang-format off
-static int styles[__LS_SIZE][3] = {
+static const int styles[__LS_SIZE][3] = {
     //              foreground           background     attribute
     [LS_SECTION]  = {COLOR_WHITE,        COLOR_DEFAULT, A_BOLD},
     [LS_FILE]     = {COLOR_WHITE,        COLOR_DEFAULT, A_ITALIC},
@@ -17,7 +17,7 @@ static int styles[__LS_SIZE][3] = {
 };
 // clang-format on
 
-// NOTE: must return string
+// NOTE: must return string of length 1
 #define FOLD_CHAR(is_folded) ((is_folded) ? "▸" : "▾")
 
 #endif  // CONFIG_H

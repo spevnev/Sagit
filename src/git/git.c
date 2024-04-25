@@ -15,11 +15,11 @@ static char *const CMD_UNTRACKED[]     = {"git", "ls-files", "--others", "--excl
 static char *const CMD_UNSTAGED[]      = {"git", "diff"};
 static char *const CMD_STAGED[]        = {"git", "diff", "--staged"};
 
+// "-" means to read from stdin instead of file
 static char *const CMD_APPLY[]         = {"git", "apply", "--cached", "-"};
 static char *const CMD_APPLY_REVERSE[] = {"git", "apply", "--cached", "--reverse", "-"};
 // clang-format on
 
-static const char *diff_header_fmt = "diff --git a/%s b/%s";
 static const char *diff_header_size_fmt = "diff --git a/%n%*s%n b/%n%*s%n";
 
 // Lines are stored as pointers into the text, thus text must be free after lines.
