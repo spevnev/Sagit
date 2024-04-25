@@ -88,6 +88,57 @@ static FileVec parse_diff(char *diff) {
     return files;
 }
 
+static File create_file_from_untracked(MemoryContext *ctxt, const char *file_path) {
+    ASSERT(ctxt != NULL && file_path != NULL);
+
+    static const char *hunk_header_fmt = "@@ -0,0 +0,%d @@";
+
+    struct stat file_info = {0};
+    if (stat(file_path, &file_info) == -1) ERROR("Unable to stat \"%s\": %s.\n", file_path, strerror(errno));
+    size_t size = file_info.st_size;
+
+    int fd = open(file_path, O_RDONLY);
+    if (fd == -1) ERROR("Unable to open \"%s\": %s.\n", file_path, strerror(errno));
+
+    // TODO: read in blocks instead?
+    char *buffer = (char *) malloc(size);
+    if (buffer == NULL) OUT_OF_MEMORY();
+    if (read(fd, buffer, size) != (ssize_t) size) ERROR("Unable to read \"%s\": %s.\n", file_path, strerror((errno)));
+    close(fd);
+
+    size_t offset = 0;
+    str_vec lines = {0};
+    for (size_t i = 0; i <= size; i++) {
+        if (i < size && buffer[i] != '\n') continue;
+
+        size_t length = i - offset;
+        char *line = (char *) ctxt_alloc(ctxt, 1 + length + 1);
+
+        line[0] = '+';
+        memcpy(line + 1, buffer + offset, length);
+        line[1 + length] = '\0';
+
+        VECTOR_PUSH(&lines, line);
+        offset = i + 1;
+    }
+    free(buffer);
+
+    size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, lines.length);
+    char *hunk_header = (char *) ctxt_alloc(ctxt, hunk_header_size + 1);
+    snprintf(hunk_header, hunk_header_size + 1, hunk_header_fmt, lines.length);
+
+    HunkVec hunks = {0};
+    Hunk hunk = {0, hunk_header, lines};
+    VECTOR_PUSH(&hunks, hunk);
+
+    size_t length = strlen(file_path);
+    char *dst_path = (char *) ctxt_alloc(ctxt, length + 1);
+    memcpy(dst_path, file_path, length);
+    dst_path[length] = '\0';
+
+    return (File){true, false, FC_CREATED, dst_path, dst_path, hunks};
+}
+
 static void merge_files(const FileVec *old_files, FileVec *new_files) {
     ASSERT(old_files != NULL && new_files != NULL);
 
