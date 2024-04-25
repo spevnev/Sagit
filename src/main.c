@@ -33,6 +33,8 @@
 #define MIN_WIDTH 80
 #define MIN_HEIGHT 10
 
+#define MAX_PATH_LENGTH 4096
+
 static bool running = true;
 static bool show_help = false;
 static State state = {0};
@@ -90,6 +92,7 @@ static void watch_dir(char *path) {
         if (entry->d_type != DT_DIR || strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) continue;
 
         size_t name_length = strlen(entry->d_name);
+        ASSERT(path_len + name_length + 1 <= MAX_PATH_LENGTH);
         memcpy(path + path_len + 1, entry->d_name, name_length);
         path[path_len + 1 + name_length] = '\0';
 
@@ -222,7 +225,7 @@ int main(int argc, char **argv) {
     inotify_fd = inotify_init1(IN_NONBLOCK);
     poll_fds[1] = (struct pollfd){inotify_fd, POLLIN, 0};
 
-    char path_buffer[4096] = ".";
+    char path_buffer[MAX_PATH_LENGTH] = ".";
     watch_dir(path_buffer);
 #endif
 
@@ -318,15 +321,18 @@ int main(int argc, char **argv) {
 
                     break;
                 case 'K': {
-                    int last_index = -1;
+                    int hunk_y = -1;
                     for (size_t i = 0; i < hunk_idxs.length; i++) {
                         if (hunk_idxs.data[i] >= y) break;
-                        last_index = hunk_idxs.data[i];
+                        hunk_y = hunk_idxs.data[i];
                     }
-                    if (last_index == -1) break;
+                    if (hunk_y == -1 || hunk_y >= y) break;
 
-                    if (last_index > scroll + SCROLL_PADDING) cursor = last_index - scroll;
-                    else scroll = last_index - cursor;
+                    if (hunk_y <= SCROLL_PADDING) {
+                        scroll = 0;
+                        cursor = hunk_y;
+                    } else if (hunk_y > scroll + SCROLL_PADDING) cursor = hunk_y - scroll;
+                    else scroll = hunk_y - cursor;
                 } break;
                 default:
                     if (y < get_lines_length()) {

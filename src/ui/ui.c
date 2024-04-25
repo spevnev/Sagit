@@ -87,7 +87,6 @@ static void render_files(int_vec *hunk_idxs, const FileVec *files, action_t *fil
                 APPEND_LINE("modified %s", file->src);
                 break;
             case FC_CREATED:
-                VECTOR_PUSH(hunk_idxs, lines.length);
                 APPEND_LINE("created %s", file->dst);
                 break;
             case FC_RENAMED:
@@ -96,6 +95,8 @@ static void render_files(int_vec *hunk_idxs, const FileVec *files, action_t *fil
             default:
                 UNREACHABLE();
         }
+
+        if (file->is_folded || file->change_type == FC_CREATED) VECTOR_PUSH(hunk_idxs, lines.length - 1);
 
         if (file->is_folded) continue;
 
