@@ -106,7 +106,8 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
             continue;
         }
 
-        if (file->change_type == FC_CREATED && file->hunks.length == 0) {
+        if (file->hunks.length == 0) {
+            ASSERT(file->change_type == FC_CREATED);
             ADD_LINE(NULL, NULL, LS_LINE, false, "<empty file>");
             continue;
         }
@@ -126,6 +127,9 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
 
             int hunk_y = lines.length;
             for (size_t j = 0; j < hunk->lines.length; j++) {
+                // Hide empty last line
+                if (j == hunk->lines.length - 1 && strlen(hunk->lines.data[j]) == 1) break;
+
                 char ch = hunk->lines.data[j][0];
 
                 LineStyle style = LS_LINE;

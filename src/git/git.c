@@ -132,16 +132,20 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
     snprintf(hunk_header, hunk_header_size + 1, hunk_header_fmt, lines.length);
 
     HunkVec hunks = {0};
-    Hunk hunk = {0, hunk_header, lines};
-    VECTOR_PUSH(&hunks, hunk);
+    bool is_binary = false;
 
     size_t length = strlen(file_path);
     char *dst_path = (char *) ctxt_alloc(ctxt, length + 1);
     memcpy(dst_path, file_path, length);
     dst_path[length] = '\0';
 
-    int exit_code = gexec(CMD("git", "grep", "-I", "--name-only", "--untracked", "-e", ".", "--", dst_path));
-    bool is_binary = exit_code != 0;
+    if (size > 0) {
+        Hunk hunk = {0, hunk_header, lines};
+        VECTOR_PUSH(&hunks, hunk);
+
+        int exit_code = gexec(CMD("git", "grep", "-I", "--name-only", "--untracked", "-e", ".", "--", dst_path));
+        is_binary = exit_code != 0;
+    }
 
     return (File){true, is_binary, FC_CREATED, dst_path, dst_path, hunks};
 }
@@ -270,7 +274,7 @@ void git_unstage_hunk(const File *file, const Hunk *hunk) {
 void git_stage_range(const File *file, const Hunk *hunk, int range_start, int range_end) {
     ASSERT(file != NULL && hunk != NULL);
 
-    char *patch = create_patch_from_range(file, hunk, range_start, range_end, 0);
+    char *patch = create_patch_from_range(file, hunk, range_start, range_end, false);
     if (patch == NULL) return;
     if (gexecw(CMD_APPLY, patch) != 0) {
         DUMP_PATCH(patch);
@@ -282,7 +286,7 @@ void git_stage_range(const File *file, const Hunk *hunk, int range_start, int ra
 void git_unstage_range(const File *file, const Hunk *hunk, int range_start, int range_end) {
     ASSERT(file != NULL && hunk != NULL);
 
-    char *patch = create_patch_from_range(file, hunk, range_start, range_end, 1);
+    char *patch = create_patch_from_range(file, hunk, range_start, range_end, true);
     if (patch == NULL) return;
     if (gexecw(CMD_APPLY_REVERSE, patch) != 0) {
         DUMP_PATCH(patch);

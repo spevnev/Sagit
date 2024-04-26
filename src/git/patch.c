@@ -85,34 +85,33 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
     bool has_changes = false;
     char *ptr = patch_body;
     for (size_t i = 0; i < hunk->lines.length; i++) {
-        const char *str = hunk->lines.data[i];
+        const char *line = hunk->lines.data[i];
+
         if (i < range_start || i > range_end) {
-            if (!reverse && str[0] == '+') {
+            if (!reverse && line[0] == '+') {
                 // skip to prevent it from being applied
                 header.new_length--;
                 continue;
-            } else if (reverse && str[0] == '-') {
+            } else if (reverse && line[0] == '-') {
                 // skip because it has already been applied
                 header.old_length--;
                 continue;
             }
         }
 
-        size_t len = strlen(str);
-        memcpy(ptr, str, len);
+        size_t len = strlen(line);
+        memcpy(ptr, line, len);
         if (i < range_start || i > range_end) {
-            if (!reverse && str[0] == '-') {
+            if (!reverse && line[0] == '-') {
                 // prevent it from being applied
                 *ptr = ' ';
                 header.new_length++;
-            } else if (reverse && str[0] == '+') {
+            } else if (reverse && line[0] == '+') {
                 // "apply", because it has already been applied
                 *ptr = ' ';
                 header.old_length++;
             }
-        } else {
-            if (str[0] == '-' || str[0] == '+') has_changes = true;
-        }
+        } else if (line[0] == '-' || line[0] == '+') has_changes = true;
 
         ptr += len;
         *ptr++ = '\n';
@@ -164,7 +163,7 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
 
     ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
     memcpy(ptr, patch_body, patch_size);
-
     free(patch_body);
+
     return patch;
 }

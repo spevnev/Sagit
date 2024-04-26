@@ -21,15 +21,19 @@
         _exit(1);                     \
     } while (0)
 
-#define ASSERT(condition)                                                                    \
-    do {                                                                                     \
-        if (!(condition)) {                                                                  \
-            endwin();                                                                        \
-            fprintf(stderr, "ASSERT(%s) failed at %s:%d\n", #condition, __FILE__, __LINE__); \
-            fflush(stderr);                                                                  \
-            _exit(1);                                                                        \
-        }                                                                                    \
-    } while (0)
+#ifdef DEBUG
+    #define ASSERT(condition)                                                                    \
+        do {                                                                                     \
+            if (!(condition)) {                                                                  \
+                endwin();                                                                        \
+                fprintf(stderr, "ASSERT(%s) failed at %s:%d\n", #condition, __FILE__, __LINE__); \
+                fflush(stderr);                                                                  \
+                _exit(1);                                                                        \
+            }                                                                                    \
+        } while (0)
+#else
+    #define ASSERT(condition)
+#endif
 
 #define UNREACHABLE()                                                              \
     do {                                                                           \
