@@ -12,13 +12,13 @@
 #include "vector.h"
 
 // clang-format off
-static char *const CMD_UNTRACKED[]     = {"git", "ls-files", "--others", "--exclude-standard"};
-static char *const CMD_UNSTAGED[]      = {"git", "diff"};
-static char *const CMD_STAGED[]        = {"git", "diff", "--staged"};
+static char *const CMD_UNTRACKED[]     = {"git", "ls-files", "--others", "--exclude-standard", NULL};
+static char *const CMD_UNSTAGED[]      = {"git", "diff", NULL};
+static char *const CMD_STAGED[]        = {"git", "diff", "--staged", NULL};
 
 // "-" means to read from stdin instead of file
-static char *const CMD_APPLY[]         = {"git", "apply", "--cached", "-"};
-static char *const CMD_APPLY_REVERSE[] = {"git", "apply", "--cached", "--reverse", "-"};
+static char *const CMD_APPLY[]         = {"git", "apply", "--cached", "-", NULL};
+static char *const CMD_APPLY_REVERSE[] = {"git", "apply", "--cached", "--reverse", "-", NULL};
 // clang-format on
 
 static const char *diff_header_size_fmt = "diff --git a/%n%*s%n b/%n%*s%n";

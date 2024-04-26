@@ -1,4 +1,3 @@
-INSTALL := ginstall
 CC      := gcc
 
 CFLAGS  := -O2 -std=c17 -Wall -Wextra -pedantic -Isrc -MMD -MP
@@ -6,8 +5,6 @@ LDFLAGS := $(shell pkg-config --libs ncursesw)
 
 ifeq ($(DEBUG),1)
 	CFLAGS += -g3 -fstack-protector -fsanitize=address,leak,undefined -DDEBUG
-else
-	CFLAGS += -s
 endif
 
 BIN_PATH ?= /usr/local/bin
@@ -36,7 +33,8 @@ clean:
 
 .PHONY: install
 install: build
-	$(INSTALL) -D -m 755 $(BINARY) $(BIN_PATH)/$(BIN_NAME)
+	mkdir -p $(BIN_PATH)
+	install -m 755 $(BINARY) $(BIN_PATH)/$(BIN_NAME)
 
 .PHONY: uninstall
 uninstall: build

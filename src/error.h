@@ -6,13 +6,19 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define ERROR(...)                                             \
-    do {                                                       \
-        endwin();                                              \
-        fprintf(stderr, "ERROR(%s:%d): ", __FILE__, __LINE__); \
-        fprintf(stderr, __VA_ARGS__);                          \
-        fflush(stderr);                                        \
-        _exit(1);                                              \
+#ifdef DEBUG
+    #define ERROR2() fprintf(stderr, "ERROR(%s:%d): ", __FILE__, __LINE__);
+#else
+    #define ERROR2() fprintf(stderr, "ERROR: ");
+#endif
+
+#define ERROR(...)                    \
+    do {                              \
+        endwin();                     \
+        ERROR2();                     \
+        fprintf(stderr, __VA_ARGS__); \
+        fflush(stderr);               \
+        _exit(1);                     \
     } while (0)
 
 #define ASSERT(condition)                                                                    \
