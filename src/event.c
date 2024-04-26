@@ -122,6 +122,8 @@ bool poll_events(State *state) {
             return false;
         }
     }
+#else
+    (void) state;
 #endif
 
     return true;

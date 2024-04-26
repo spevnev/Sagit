@@ -1,4 +1,8 @@
+#if __APPLE__
+    #define _DARWIN_C_SOURCE
+#endif
 #define _XOPEN_SOURCE 700
+
 #include <errno.h>
 #include <ncurses.h>
 #include <signal.h>
