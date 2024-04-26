@@ -5,10 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "config.h"
+#include "ctxt.h"
 #include "error.h"
 #include "git/git.h"
 #include "git/state.h"
-#include "memory.h"
 #include "ui/action.h"
 #include "ui/sort.h"
 #include "vector.h"

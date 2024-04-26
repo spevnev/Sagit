@@ -1,5 +1,5 @@
-#ifndef MEMORY_H
-#define MEMORY_H
+#ifndef CTXT_H
+#define CTXT_H
 
 #include <stdlib.h>
 
@@ -23,4 +23,4 @@ void *ctxt_alloc(MemoryContext *ctxt, size_t size);
 // NOTE: doesn't free the `ptr` with only difference from alloc being memcpy of old data
 void *ctxt_realloc(MemoryContext *ctxt, void *ptr, size_t size);
 
-#endif  // MEMORY_H
+#endif  // CTXT_H

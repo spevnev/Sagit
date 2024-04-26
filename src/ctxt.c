@@ -1,7 +1,7 @@
-#include "memory.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "ctxt.h"
 #include "error.h"
 
 #define INITIAL_REGION_SIZE 4096

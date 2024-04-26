@@ -1,7 +1,7 @@
 #include "state.h"
 #include <stdlib.h>
+#include "ctxt.h"
 #include "error.h"
-#include "memory.h"
 #include "vector.h"
 
 void free_files(FileVec *files) {

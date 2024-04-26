@@ -4,11 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include "ctxt.h"
 #include "error.h"
 #include "git/exec.h"
 #include "git/patch.h"
 #include "git/state.h"
-#include "memory.h"
 #include "vector.h"
 
 // clang-format off

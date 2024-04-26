@@ -8,7 +8,6 @@
 #include "error.h"
 #include "git/git.h"
 #include "git/state.h"
-#include "memory.h"
 #include "vector.h"
 
 static const char *file_header_fmt = "diff --git %s %s\n--- a/%s\n+++ b/%s\n";

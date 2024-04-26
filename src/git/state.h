@@ -2,7 +2,7 @@
 #define STATE_H
 
 #include <ncurses.h>
-#include "memory.h"
+#include "ctxt.h"
 #include "vector.h"
 
 typedef struct {
