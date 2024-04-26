@@ -32,7 +32,9 @@
             }                                                                                    \
         } while (0)
 #else
-    #define ASSERT(condition)
+    #define ASSERT(condition) \
+        do {                  \
+        } while (0)
 #endif
 
 #define UNREACHABLE()                                                              \

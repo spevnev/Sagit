@@ -10,7 +10,10 @@
 #define DUMP_PATCH(patch)                                                     \
     do {                                                                      \
         int fd = open(FAILED_PATCH_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0755); \
-        write(fd, patch, strlen(patch));                                      \
+        size_t len = strlen(patch);                                           \
+        int bytes = write(fd, patch, len);                                    \
+        (void) bytes;                                                         \
+        ASSERT(bytes == len);                                                 \
         close(fd);                                                            \
     } while (0);
 

@@ -15,11 +15,14 @@ bool running = true;
 
 static void stop_running(int signal) {
     ASSERT(signal == SIGINT);
+    (void) signal;
+
     running = false;
 }
 
 static void resize(int signal) {
     ASSERT(signal == SIGWINCH);
+    (void) signal;
 
     struct winsize win;
     ioctl(0, TIOCGWINSZ, &win);
