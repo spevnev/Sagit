@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "git/state.h"
-#include "utils/vector.h"
+#include "vector.h"
 
 static void swap(size_t *arr, size_t i, size_t j) {
     size_t temp = arr[i];

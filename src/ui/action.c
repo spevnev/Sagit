@@ -1,8 +1,8 @@
 #include "action.h"
 #include <string.h>
+#include "error.h"
 #include "git/git.h"
 #include "git/state.h"
-#include "utils/error.h"
 
 int section_action(void *_section, const ActionArgs *args) {
     Section *section = (Section *) _section;

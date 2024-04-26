@@ -5,13 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include "config.h"
+#include "error.h"
 #include "git/git.h"
 #include "git/state.h"
+#include "memory.h"
 #include "ui/action.h"
-#include "utils/error.h"
-#include "utils/memory.h"
-#include "utils/sort.h"
-#include "utils/vector.h"
+#include "ui/sort.h"
+#include "vector.h"
 
 typedef struct {
     char *str;

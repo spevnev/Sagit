@@ -7,10 +7,10 @@
 #include <poll.h>
 #include <string.h>
 #include <unistd.h>
+#include "error.h"
 #include "git/git.h"
 #include "git/state.h"
 #include "ui/ui.h"
-#include "utils/error.h"
 
 #define MAX_PATH_LENGTH 4096
 
@@ -18,6 +18,8 @@
     #include <sys/inotify.h>
 static int inotify_fd = -1;
 static bool ignore_inotify = false;
+static char path_buffer[MAX_PATH_LENGTH];
+static char event_buffer[1024];
 #endif
 
 #ifdef __linux__
@@ -65,7 +67,8 @@ void poll_init(void) {
     inotify_fd = inotify_init1(IN_NONBLOCK);
     poll_fds[1] = (struct pollfd){inotify_fd, POLLIN, 0};
 
-    char path_buffer[MAX_PATH_LENGTH] = ".";
+    path_buffer[0] = '.';
+    path_buffer[1] = '\0';
     watch_dir(path_buffer);
 #endif
 }
@@ -84,9 +87,6 @@ bool poll_events(State *state) {
     }
 
 #ifdef __linux__
-    static char path_buffer[4096];
-    static char event_buffer[1024];
-
     if (poll_fds[1].revents & POLLIN) {
         ssize_t bytes;
         int new_dir = 0;

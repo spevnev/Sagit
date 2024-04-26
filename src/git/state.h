@@ -2,8 +2,8 @@
 #define STATE_H
 
 #include <ncurses.h>
-#include "utils/memory.h"
-#include "utils/vector.h"
+#include "memory.h"
+#include "vector.h"
 
 typedef struct {
     bool is_folded;

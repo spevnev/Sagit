@@ -1,8 +1,8 @@
 #include "state.h"
 #include <stdlib.h>
-#include "utils/error.h"
-#include "utils/memory.h"
-#include "utils/vector.h"
+#include "error.h"
+#include "memory.h"
+#include "vector.h"
 
 void free_files(FileVec *files) {
     ASSERT(files != NULL);

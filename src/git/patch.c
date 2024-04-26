@@ -5,11 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include "error.h"
 #include "git/git.h"
 #include "git/state.h"
-#include "utils/error.h"
-#include "utils/memory.h"
-#include "utils/vector.h"
+#include "memory.h"
+#include "vector.h"
 
 static const char *file_header_fmt = "diff --git %s %s\n--- a/%s\n+++ b/%s\n";
 static const char *new_file_header_fmt = "diff --git %s %s\nnew file mode %o\n--- /dev/null\n+++ b/%s\n";

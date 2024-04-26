@@ -5,7 +5,7 @@
 #define VECTOR_H
 
 #include <stdlib.h>
-#include "utils/error.h"
+#include "error.h"
 
 #define INITIAL_VECTOR_CAPACITY 16
 
