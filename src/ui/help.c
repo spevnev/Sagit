@@ -6,6 +6,7 @@ static const char *help_lines[] = {
     "Keybindings:"                                                             ,
     "q, esc  - quit, close help"                                               ,
     "h       - open/close (this) help"                                         ,
+    "r       - force reload (if it doesn't automatically)"                     ,
     "j, down - next line"                                                      ,
     "k, up   - previous line"                                                  ,
     "J       - next (visible) hunk"                                            ,

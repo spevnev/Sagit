@@ -111,6 +111,10 @@ static void handle_main(void) {
             case 'h':
                 show_help = true;
                 break;
+            case 'r':
+                update_git_state(&state);
+                render(&state);
+                break;
             case MOUSE_SCROLL_DOWN:
             case KEY_DOWN:
             case 'j':
