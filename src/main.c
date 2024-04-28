@@ -131,6 +131,7 @@ static void handle_main(void) {
                 int hunk_y = get_next_hunk(y);
                 if (hunk_y == -1) break;
 
+                selection = -1;
                 if (hunk_y < scroll + getmaxy(stdscr) - SCROLL_PADDING) cursor = hunk_y - scroll;
                 else scroll = hunk_y - cursor;
             } break;
@@ -148,6 +149,7 @@ static void handle_main(void) {
                 int hunk_y = get_prev_hunk(y);
                 if (hunk_y == -1) break;
 
+                selection = -1;
                 if (hunk_y <= SCROLL_PADDING) {
                     scroll = 0;
                     cursor = hunk_y;
