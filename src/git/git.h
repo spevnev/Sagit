@@ -4,6 +4,8 @@
 #include <ncurses.h>
 #include "git/state.h"
 
+static const char *NO_NEWLINE = "\\ No newline at end of file";
+
 bool is_git_initialized(void);
 bool is_state_empty(State *state);
 bool is_ignored(char *file_path);

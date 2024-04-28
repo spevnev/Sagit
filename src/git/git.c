@@ -125,7 +125,6 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
         VECTOR_PUSH(&lines, line);
         offset = i + 1;
     }
-    free(buffer);
 
     size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, lines.length);
     char *hunk_header = (char *) ctxt_alloc(ctxt, hunk_header_size + 1);
@@ -140,6 +139,15 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
     dst_path[length] = '\0';
 
     if (size > 0) {
+        if (buffer[size - 1] != '\n') {
+            size_t len = strlen(NO_NEWLINE);
+
+            char *line = (char *) ctxt_alloc(ctxt, len);
+            memcpy(line, NO_NEWLINE, len);
+            line[len] = '\0';
+            VECTOR_PUSH(&lines, line);
+        }
+
         Hunk hunk = {0, hunk_header, lines};
         VECTOR_PUSH(&hunks, hunk);
 
@@ -147,6 +155,7 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
         is_binary = exit_code != 0;
     }
 
+    free(buffer);
     return (File){true, is_binary, FC_CREATED, dst_path, dst_path, hunks};
 }
 

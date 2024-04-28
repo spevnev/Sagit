@@ -23,24 +23,22 @@ typedef struct {
 static HunkHeader parse_hunk_header(const char *raw) {
     ASSERT(raw != NULL);
 
-    HunkHeader header = {0};
-    int a = 0, b = 0, pos = 0;
+    HunkHeader header = {-1, -1, -1};
+    int a = 0, b = 0, offset = 0;
 
-    if (sscanf(raw, "@@ -%d%n", &a, &pos) != 1) ERROR("Unable to parse hunk header: \"%s\".\n", raw);
-    raw += pos;
-
-    if (sscanf(raw, ",%d %n", &b, &pos) == 1) {
+    if (sscanf(raw, "-%d,%d %n", &a, &b, &offset) == 2) {
+        header.start = a;
         header.old_length = b;
-        raw += pos;
-    } else {
-        header.old_length = a;
-        raw++;
-    }
+    } else ERROR("Unable to parse hunk header: \"%s\".\n", raw);
 
-    if (sscanf(raw, "+%d,%d @@", &a, &b) != 2) ERROR("Unable to parse hunk header: \"%s\".\n", raw);
-    header.start = a;
-    header.new_length = b;
+    if (sscanf(raw + offset, "+%d,%d @@", &a, &b) == 2) {
+        if (header.start == -1) header.start = a;
+        header.new_length = b;
+    } else if (sscanf(raw + offset, "+%d @@", &a) == 1) {
+        header.new_length = a;
+    } else ERROR("Unable to parse hunk header: \"%s\".\n", raw);
 
+    ASSERT(header.start != -1 && header.old_length != -1 && header.new_length != -1);
     return header;
 }
 
@@ -74,6 +72,7 @@ char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
 
 char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, bool reverse) {
     ASSERT(file != NULL && hunk != NULL);
+    ASSERT(hunk->lines.length >= 1);
 
     HunkHeader header = parse_hunk_header(hunk->header);
 
@@ -83,11 +82,14 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
     if (patch_body == NULL) OUT_OF_MEMORY();
 
     bool has_changes = false;
+    bool has_unstaged_changes = false;
     char *ptr = patch_body;
     for (size_t i = 0; i < hunk->lines.length; i++) {
         const char *line = hunk->lines.data[i];
 
         if (i < range_start || i > range_end) {
+            if (line[0] == '+' || line[0] == '-') has_unstaged_changes = true;
+
             if (!reverse && line[0] == '+') {
                 // skip to prevent it from being applied
                 header.new_length--;
@@ -118,10 +120,17 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
     }
     *ptr = '\0';
 
-    if (header.new_length == 0) {
-        // After unstaging this range the file will be left empty, thus in order
-        // not to leave empty-yet-added files we have to unstage it
-        ASSERT(file->change_type == FC_CREATED);
+    if (!reverse) {
+        // Handle partial staging of files/hunks with "\ No newline at end of file"
+        if (strcmp(hunk->lines.data[hunk->lines.length - 1], NO_NEWLINE) == 0 && has_unstaged_changes) {
+            ASSERT(hunk->lines.length >= 2);
+            bool is_last_staged = hunk->lines.data[hunk->lines.length - 2][0] == ' ' || range_end >= hunk->lines.length - 2;
+            if (!is_last_staged) *(ptr - strlen(NO_NEWLINE) - 1) = '\0';
+        }
+    }
+
+    if ((!reverse && header.new_length == 0) || (reverse && header.old_length == 0)) {
+        // This patch will leave file empty, so we should unstage it
         git_unstage_file(file->dst);
         free(patch_body);
         return NULL;
@@ -163,7 +172,7 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
 
     ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
     memcpy(ptr, patch_body, patch_size);
-    free(patch_body);
 
+    free(patch_body);
     return patch;
 }
