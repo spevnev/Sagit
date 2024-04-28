@@ -4,7 +4,7 @@
 #include "ui/ui.h"
 
 // number of lines before the edge of the screen when scrolling starts
-#define SCROLL_PADDING 2
+#define SCROLL_PADDING 3
 
 // clang-format off
 static const int styles[__LS_SIZE][3] = {
