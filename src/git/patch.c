@@ -31,6 +31,8 @@ static HunkHeader parse_hunk_header(const char *raw) {
     if (sscanf(raw, "@@ -%d,%d %n", &a, &b, &offset) == 2) {
         header.start = a;
         header.old_length = b;
+    } else if (sscanf(raw, "@@ -%d %n", &a, &offset) == 1) {
+        header.old_length = a;
     } else ERROR("Unable to parse hunk header: \"%s\".\n", raw);
 
     if (sscanf(raw + offset, "+%d,%d @@", &a, &b) == 2) {

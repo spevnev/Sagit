@@ -98,11 +98,18 @@ static FileVec parse_diff(char *diff) {
 static File create_file_from_untracked(MemoryContext *ctxt, const char *file_path) {
     ASSERT(ctxt != NULL && file_path != NULL);
 
-    static const char *hunk_header_fmt = "@@ -0,0 +0,%d @@";
-
     struct stat file_info = {0};
     if (stat(file_path, &file_info) == -1) ERROR("Unable to stat \"%s\": %s.\n", file_path, strerror(errno));
     size_t size = file_info.st_size;
+
+    HunkVec hunks = {0};
+
+    size_t length = strlen(file_path);
+    char *dst_path = (char *) ctxt_alloc(ctxt, length + 1);
+    memcpy(dst_path, file_path, length);
+    dst_path[length] = '\0';
+
+    if (size == 0) return (File){true, false, FC_CREATED, dst_path, dst_path, hunks};
 
     int fd = open(file_path, O_RDONLY);
     if (fd == -1) ERROR("Unable to open \"%s\": %s.\n", file_path, strerror(errno));
@@ -128,34 +135,25 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
         offset = i + 1;
     }
 
+    static const char *hunk_header_fmt = "@@ -0,0 +0,%d @@";
     size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, lines.length);
     char *hunk_header = (char *) ctxt_alloc(ctxt, hunk_header_size + 1);
     snprintf(hunk_header, hunk_header_size + 1, hunk_header_fmt, lines.length);
 
-    HunkVec hunks = {0};
-    bool is_binary = false;
+    if (buffer[size - 1] != '\n') {
+        size_t len = strlen(NO_NEWLINE);
 
-    size_t length = strlen(file_path);
-    char *dst_path = (char *) ctxt_alloc(ctxt, length + 1);
-    memcpy(dst_path, file_path, length);
-    dst_path[length] = '\0';
-
-    if (size > 0) {
-        if (buffer[size - 1] != '\n') {
-            size_t len = strlen(NO_NEWLINE);
-
-            char *line = (char *) ctxt_alloc(ctxt, len);
-            memcpy(line, NO_NEWLINE, len);
-            line[len] = '\0';
-            VECTOR_PUSH(&lines, line);
-        }
-
-        Hunk hunk = {0, hunk_header, lines};
-        VECTOR_PUSH(&hunks, hunk);
-
-        int exit_code = gexec(CMD("git", "grep", "-I", "--name-only", "--untracked", "-e", ".", "--", dst_path));
-        is_binary = exit_code != 0;
+        char *line = (char *) ctxt_alloc(ctxt, len);
+        memcpy(line, NO_NEWLINE, len);
+        line[len] = '\0';
+        VECTOR_PUSH(&lines, line);
     }
+
+    Hunk hunk = {0, hunk_header, lines};
+    VECTOR_PUSH(&hunks, hunk);
+
+    int exit_code = gexec(CMD("git", "grep", "-I", "--name-only", "--untracked", "-e", ".", "--", dst_path));
+    bool is_binary = exit_code != 0;
 
     free(buffer);
     return (File){true, is_binary, FC_CREATED, dst_path, dst_path, hunks};
@@ -174,6 +172,20 @@ static void add_untracked_files(MemoryContext *ctxt, FileVec *unstaged) {
     free(raw_file_paths);
 }
 
+static void merge_hunks(const HunkVec *old_hunks, HunkVec *new_hunks) {
+    for (size_t i = 0; i < new_hunks->length; i++) {
+        Hunk *new_hunk = &new_hunks->data[i];
+
+        for (size_t j = 0; j < old_hunks->length; j++) {
+            const Hunk *old_hunk = &old_hunks->data[j];
+            if (strcmp(old_hunk->header, new_hunk->header) != 0) continue;
+
+            new_hunk->is_folded = old_hunk->is_folded;
+            break;
+        }
+    }
+}
+
 static void merge_files(const FileVec *old_files, FileVec *new_files) {
     ASSERT(old_files != NULL && new_files != NULL);
 
@@ -184,19 +196,8 @@ static void merge_files(const FileVec *old_files, FileVec *new_files) {
             const File *old_file = &old_files->data[j];
             if (strcmp(old_file->src, new_file->src) != 0) continue;
 
-            for (size_t k = 0; k < new_file->hunks.length; k++) {
-                Hunk *new_hunk = &new_file->hunks.data[k];
-
-                for (size_t h = 0; h < old_file->hunks.length; h++) {
-                    const Hunk *old_hunk = &old_file->hunks.data[h];
-                    if (strcmp(old_file->src, new_file->src) != 0) continue;
-
-                    new_hunk->is_folded = old_hunk->is_folded;
-                    break;
-                }
-            }
-
             new_file->is_folded = old_file->is_folded;
+            merge_hunks(&old_file->hunks, &new_file->hunks);
             break;
         }
     }
@@ -232,14 +233,18 @@ void update_git_state(State *state) {
 
     char *unstaged_raw = gexecr(CMD_UNSTAGED);
     FileVec unstaged_files = parse_diff(unstaged_raw);
+    MemoryContext new_ctxt;
+    ctxt_init(&new_ctxt);
+    add_untracked_files(&new_ctxt, &unstaged_files);
+
     merge_files(&state->unstaged.files, &unstaged_files);
+
+    ctxt_free(&state->untracked_ctxt);
+    state->untracked_ctxt = new_ctxt;
     free_files(&state->unstaged.files);
     free(state->unstaged.raw);
     state->unstaged.files = unstaged_files;
     state->unstaged.raw = unstaged_raw;
-
-    ctxt_reset(&state->untracked_ctxt);
-    add_untracked_files(&state->untracked_ctxt, &state->unstaged.files);
 
     char *staged_raw = gexecr(CMD_STAGED);
     FileVec staged_files = parse_diff(staged_raw);
