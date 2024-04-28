@@ -154,7 +154,11 @@ static void handle_main(void) {
                     scroll = 0;
                     cursor = hunk_y;
                 } else if (hunk_y > scroll + SCROLL_PADDING) cursor = hunk_y - scroll;
-                else scroll = hunk_y - cursor;
+                else if (cursor >= hunk_y) scroll = hunk_y - cursor;
+                else {
+                    scroll = 0;
+                    cursor = hunk_y;
+                }
             } break;
             default:
                 if (y < get_lines_length()) {
