@@ -3,13 +3,13 @@
 #endif
 #define _XOPEN_SOURCE 700
 
+#include "signals.h"
 #include <errno.h>
 #include <ncurses.h>
 #include <signal.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include "error.h"
-#include "signals.h"
 
 bool running = true;
 
