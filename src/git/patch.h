@@ -11,7 +11,7 @@
     do {                                                                      \
         int fd = open(FAILED_PATCH_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0755); \
         size_t len = strlen(patch);                                           \
-        int bytes = write(fd, patch, len);                                    \
+        size_t bytes = write(fd, patch, len);                                 \
         (void) bytes;                                                         \
         ASSERT(bytes == len);                                                 \
         close(fd);                                                            \

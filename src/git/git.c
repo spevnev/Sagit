@@ -11,6 +11,8 @@
 #include "git/state.h"
 #include "vector.h"
 
+static const char *NO_NEWLINE = "\\ No newline at end of file";
+
 // clang-format off
 static char *const CMD_UNTRACKED[]     = {"git", "ls-files", "--others", "--exclude-standard", NULL};
 static char *const CMD_UNSTAGED[]      = {"git", "diff", NULL};
