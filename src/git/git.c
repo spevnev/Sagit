@@ -21,6 +21,8 @@ static char *const CMD_STAGED[]        = {"git", "diff", "--staged", NULL};
 // "-" means to read from stdin instead of file
 static char *const CMD_APPLY[]         = {"git", "apply", "--cached", "-", NULL};
 static char *const CMD_APPLY_REVERSE[] = {"git", "apply", "--cached", "--reverse", "-", NULL};
+
+static char *const CMD_COUNT_COMMITS[] = {"git", "rev-list", "--count", "--all", NULL};
 // clang-format on
 
 static const char *diff_header_size_fmt = "diff --git a/%n%*s%n b/%n%*s%n";
@@ -262,7 +264,19 @@ void git_stage_file(const char *file_path) {
 
 void git_unstage_file(const char *file_path) {
     ASSERT(file_path != NULL);
-    if (gexec(CMD("git", "restore", "--staged", (char *) file_path)) != 0) ERROR("Unable to unstage file.\n");
+    if (gexec(CMD("git", "restore", "--staged", (char *) file_path)) == 0) return;
+
+    // There is one valid case when it might fail: there are no commits yet
+    // thus `restore --staged` it fails to restore the file to the last commit
+    // as there isn't any.
+    char *output = gexecr(CMD_COUNT_COMMITS);
+    if (strcmp(output, "0\n") != 0) ERROR("Unable to unstage file.\n");
+    free(output);
+
+    // If this is the case we know that the file wasn't staged before, so we can
+    // safely remove it from the index using `git rm --cached`.
+    // NOTE: `--force` is required for files that are partially staged
+    if (gexec(CMD("git", "rm", "--cached", "--force", (char *) file_path)) != 0) ERROR("Unable to unstage file.\n");
 }
 
 void git_stage_hunk(const File *file, const Hunk *hunk) {
