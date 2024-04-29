@@ -1,6 +1,8 @@
-# Sagit - Selective add for git
+# Sagit
 
 Sagit is a small CLI utility which aims to make `git add` more flexible by allowing to stage changes on a line-by-line basis.
+
+Works on Linux and MacOS
 
 ## Building and Installing
 
