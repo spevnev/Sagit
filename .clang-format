@@ -7,7 +7,6 @@ BreakBeforeBraces: Attach
 ColumnLimit: 160
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 IncludeBlocks: Merge
-IndentPPDirectives: BeforeHash
 IndentWidth: 4
 BreakBeforeBinaryOperators: All
 BreakBeforeTernaryOperators: true
