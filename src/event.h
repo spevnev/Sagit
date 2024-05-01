@@ -9,6 +9,6 @@ void poll_cleanup(void);
 
 // Polls for either file change or key. Returns whether key was pressed
 bool poll_events(State *state);
-void poll_ignore_change(void);
+void poll_ignore_event(void);
 
 #endif  // EVENT_H

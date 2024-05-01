@@ -11,6 +11,10 @@
 #include "ui/ui.h"
 #include "vector.h"
 
+#if !defined(__linux__) && !defined(__APPLE__)
+#warning WARNING: Sagit only supports Linux and MacOS
+#endif
+
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 
@@ -164,7 +168,7 @@ static void handle_main(void) {
                 if (y < get_lines_length()) {
                     int result = invoke_action(y, ch, selection_start, selection_end);
                     if (result & AC_UPDATE_STATE) {
-                        poll_ignore_change();
+                        poll_ignore_event();
                         update_git_state(&state);
                         render(&state);
                     }
@@ -184,9 +188,9 @@ int main(int argc, char **argv) {
     if (!is_git_initialized()) ERROR("Git is not initialized in the current directory.\n");
     get_git_state(&state);
 
-    setup_signal_handlers();
     poll_init();
     ui_init();
+    setup_signal_handlers();
     atexit(cleanup);
     render(&state);
 
