@@ -27,6 +27,7 @@
 #define NEW_FOLDER (NOTE_WRITE | NOTE_LINK)
 
 static int_vec kqueue_fds = {0};
+static int git_index_fd = -1;
 
 #endif
 
@@ -36,6 +37,24 @@ static char path_buffer[MAX_PATH_LENGTH];
 static struct pollfd poll_fds[2];
 static int events_fd = -1;
 static bool ignore_event = false;
+
+static void watch_git_index(void) {
+    static const char *path = ".git/index";
+
+    int status;
+#ifdef __linux__
+    status = inotify_add_watch(events_fd, path, IN_MODIFY | IN_DELETE);
+#else
+    static struct kevent event;
+
+    if (git_index_fd != -1) close(git_index_fd);
+    git_index_fd = open(path, O_RDONLY);
+
+    EV_SET(&event, git_index_fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, NOTE_DELETE | NOTE_WRITE | NOTE_EXTEND, 0, 0);
+    status = kevent(events_fd, &event, 1, NULL, 0, NULL);
+#endif
+    if (status == -1) ERROR("Unable to watch \"%s\": %s.\n", path, strerror(errno));
+}
 
 // Recursively adds directories to inotify(Linux) or kqueue(BSD/MacOS).
 // NOTE: modifies path, which must fit longest possible path.
@@ -63,7 +82,7 @@ static void watch_dir(char *path) {
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) continue;
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 || strcmp(entry->d_name, ".git") == 0) continue;
 
 #ifdef __linux__
         if (entry->d_type != DT_DIR) continue;
@@ -73,29 +92,6 @@ static void watch_dir(char *path) {
         ASSERT(path_len + dir_len + 1 <= MAX_PATH_LENGTH);
         memcpy(path + path_len, entry->d_name, dir_len);
         path[path_len + dir_len] = '\0';
-
-        if (strcmp(entry->d_name, ".git") == 0) {
-            static const char *filename = "index";
-            size_t file_len = strlen(filename);
-
-            ASSERT(path + path_len + dir_len + 1 + file_len + 1 <= MAX_PATH_LENGTH);
-            path[path_len + dir_len] = '/';
-            memcpy(path + path_len + dir_len + 1, filename, file_len);
-            path[path_len + dir_len + 1 + file_len] = '\0';
-
-            int status;
-#ifdef __linux__
-            status = inotify_add_watch(events_fd, path, IN_MODIFY | IN_DELETE);
-#else
-            int fd = open(path, O_RDONLY);
-            EV_SET(&event, fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, NOTE_DELETE | NOTE_WRITE | NOTE_EXTEND, 0, 0);
-            status = kevent(events_fd, &event, 1, NULL, 0, NULL);
-            VECTOR_PUSH(&kqueue_fds, fd);
-#endif
-            if (status == -1) ERROR("Unable to watch \"%s\": %s.\n", path, strerror(errno));
-
-            continue;
-        }
 
 #ifdef __linux__
         watch_dir(path);
@@ -123,6 +119,7 @@ static void watch_dirs(void) {
     path_buffer[0] = '.';
     path_buffer[1] = '\0';
     watch_dir(path_buffer);
+    watch_git_index();
 }
 
 void poll_init(void) {
@@ -182,6 +179,7 @@ bool poll_events(State *state) {
         int events;
         while ((events = kevent(events_fd, NULL, 0, &event, 1, &time)) > 0) {
             if ((event.fflags & NEW_FOLDER) == NEW_FOLDER) reindex = true;
+            if ((int) event.ident == git_index_fd && event.fflags == NOTE_DELETE) watch_git_index();
         }
         if (events == -1) ERROR("Unable to read kevent: %s.\n", strerror(errno));
 #endif
