@@ -20,13 +20,21 @@ $ make install BIN_PATH="/home/example_user/bin"
 
 ## Usage
 
-Either use it directly or alias to e.g. sadd:
+There are multiple options for using it:
+
+### Directly
+
+```console
+$ sagit
+```
+
+### Git alias
+
+Alias it to, e.g. `git sadd`:
 
 ```console
 $ git config alias.sadd '!sagit'
 ```
-
-To see keybindings press `h`.
 
 ### VSCode integration
 
@@ -52,10 +60,14 @@ You can add keybinding like this to open full screen terminal in VSCode (to `key
 
 NOTE: `\u000D` acts like Enter and is used to run the command
 
-### Configuring
+## Configuring
 
 Configuration is done by modifying `src/config.h` and rebuilding. \
 If changes didn't apply, try running `make clean` before rebuilding again.
+
+## Keybindings
+
+Press `h` to see help page along with keybindings
 
 ## Uninstalling
 
