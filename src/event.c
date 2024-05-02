@@ -59,7 +59,7 @@ static void watch_dir(char *path) {
     if (dir == NULL) ERROR("Unable to open directory \"%s\": %s.\n", path, strerror(errno));
 
     size_t path_len = strlen(path);
-    path[path_len] = '/';
+    path[path_len++] = '/';
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
@@ -69,10 +69,33 @@ static void watch_dir(char *path) {
         if (entry->d_type != DT_DIR) continue;
 #endif
 
-        size_t name_length = strlen(entry->d_name);
-        ASSERT(path_len + name_length + 1 <= MAX_PATH_LENGTH);
-        memcpy(path + path_len + 1, entry->d_name, name_length);
-        path[path_len + 1 + name_length] = '\0';
+        size_t dir_len = strlen(entry->d_name);
+        ASSERT(path_len + dir_len + 1 <= MAX_PATH_LENGTH);
+        memcpy(path + path_len, entry->d_name, dir_len);
+        path[path_len + dir_len] = '\0';
+
+        if (strcmp(entry->d_name, ".git") == 0) {
+            static const char *filename = "index";
+            size_t file_len = strlen(filename);
+
+            ASSERT(path + path_len + dir_len + 1 + file_len + 1 <= MAX_PATH_LENGTH);
+            path[path_len + dir_len] = '/';
+            memcpy(path + path_len + dir_len + 1, filename, file_len);
+            path[path_len + dir_len + 1 + file_len] = '\0';
+
+            int status;
+#ifdef __linux__
+            status = inotify_add_watch(events_fd, path, IN_MODIFY | IN_DELETE);
+#else
+            int fd = open(path, O_RDONLY);
+            EV_SET(&event, fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, NOTE_DELETE | NOTE_WRITE | NOTE_EXTEND, 0, 0);
+            status = kevent(events_fd, &event, 1, NULL, 0, NULL);
+            VECTOR_PUSH(&kqueue_fds, fd);
+#endif
+            if (status == -1) ERROR("Unable to watch \"%s\": %s.\n", path, strerror(errno));
+
+            continue;
+        }
 
 #ifdef __linux__
         watch_dir(path);
