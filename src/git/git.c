@@ -64,6 +64,8 @@ static FileVec parse_diff(char *diff) {
         file.dst = lines.data[i] + dst_begin;
         lines.data[i][dst_end] = '\0';
 
+        i++;
+
         while (i < lines.length && lines.data[i][0] != '@') {
             if (strncmp(lines.data[i], "Binary files ", 13) == 0) file.is_binary = true;
             if (strncmp(lines.data[i], "new file mode", 13) == 0) file.change_type = FC_CREATED;
@@ -76,6 +78,7 @@ static FileVec parse_diff(char *diff) {
                 if (file.change_type == FC_DELETED) ASSERT(strcmp(lines.data[i] + 4, "/dev/null") == 0);
                 else ASSERT(strcmp(lines.data[i] + 6, file.dst) == 0);
             }
+            if (strncmp(lines.data[i], "diff --git", 10) == 0) break;
             i++;
         }
         if (strcmp(file.src, file.dst) != 0) file.change_type = FC_RENAMED;
