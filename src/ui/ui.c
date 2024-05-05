@@ -78,7 +78,7 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
         if (file->change_type == FC_DELETED) {
             // Don't display deleted files' content
             VECTOR_PUSH(&hunk_indexes, lines.length);
-            ADD_LINE(file_action, file, LS_FILE, false, " deleted %s", file->src);
+            ADD_LINE(file_action, file, LS_FILE, false, " deleted  %s", file->src);
             continue;
         }
 
@@ -88,10 +88,10 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
                 APPEND_LINE("modified %s", file->src);
                 break;
             case FC_CREATED:
-                APPEND_LINE("created %s", file->dst);
+                APPEND_LINE("created  %s", file->dst);
                 break;
             case FC_RENAMED:
-                APPEND_LINE("renamed %s -> %s", file->src, file->dst);
+                APPEND_LINE("renamed  %s -> %s", file->src, file->dst);
                 break;
             default:
                 UNREACHABLE();
