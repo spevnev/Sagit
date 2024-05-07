@@ -100,11 +100,16 @@ static FileVec parse_diff(char *diff) {
     return files;
 }
 
-static File create_file_from_untracked(MemoryContext *ctxt, const char *file_path) {
+// It is possible for the file to get deleted by the time or during this function.
+// Return value indicates whether the `file` was set.
+static bool create_file_from_untracked(File *file, MemoryContext *ctxt, const char *file_path) {
     ASSERT(ctxt != NULL && file_path != NULL);
 
     struct stat file_info = {0};
-    if (stat(file_path, &file_info) == -1) ERROR("Unable to stat \"%s\": %s.\n", file_path, strerror(errno));
+    if (stat(file_path, &file_info) == -1) {
+        if (errno == ENOENT) return false;
+        ERROR("Unable to stat \"%s\": %s.\n", file_path, strerror(errno));
+    }
     size_t size = file_info.st_size;
 
     HunkVec hunks = {0};
@@ -114,10 +119,16 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
     memcpy(dst_path, file_path, length);
     dst_path[length] = '\0';
 
-    if (size == 0) return (File){true, false, FC_CREATED, dst_path, dst_path, hunks};
+    if (size == 0) {
+        *file = (File){true, false, FC_CREATED, dst_path, dst_path, hunks};
+        return true;
+    }
 
     int fd = open(file_path, O_RDONLY);
-    if (fd == -1) ERROR("Unable to open \"%s\": %s.\n", file_path, strerror(errno));
+    if (fd == -1) {
+        if (errno == ENOENT) return false;
+        ERROR("Unable to open \"%s\": %s.\n", file_path, strerror(errno));
+    }
 
     char *buffer = (char *) malloc(size);
     if (buffer == NULL) OUT_OF_MEMORY();
@@ -153,6 +164,7 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
         line[len] = '\0';
         VECTOR_PUSH(&lines, line);
     }
+    free(buffer);
 
     Hunk hunk = {0, hunk_header, lines};
     VECTOR_PUSH(&hunks, hunk);
@@ -160,17 +172,17 @@ static File create_file_from_untracked(MemoryContext *ctxt, const char *file_pat
     int exit_code = gexec(CMD("git", "grep", "-I", "--name-only", "--untracked", "-e", ".", "--", dst_path));
     bool is_binary = exit_code != 0;
 
-    free(buffer);
-    return (File){true, is_binary, FC_CREATED, dst_path, dst_path, hunks};
+    *file = (File){true, is_binary, FC_CREATED, dst_path, dst_path, hunks};
+    return true;
 }
 
 static void add_untracked_files(MemoryContext *ctxt, FileVec *unstaged) {
     char *raw_file_paths = gexecr(CMD_UNTRACKED);
     str_vec untracked_file_paths = split(raw_file_paths, '\n');
 
+    File file = {0};
     for (size_t i = 0; i < untracked_file_paths.length; i++) {
-        File file = create_file_from_untracked(ctxt, untracked_file_paths.data[i]);
-        VECTOR_PUSH(unstaged, file);
+        if (create_file_from_untracked(&file, ctxt, untracked_file_paths.data[i])) VECTOR_PUSH(unstaged, file);
     }
 
     VECTOR_FREE(&untracked_file_paths);
