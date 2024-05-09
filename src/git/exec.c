@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/fcntl.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include "error.h"
@@ -25,15 +26,20 @@ int gexec(char *const *args) {
     pid_t pid = fork();
     if (pid == -1) ERROR("Couldn't fork process: %s.\n", strerror(errno));
     if (pid == 0) {
-        close(STDOUT_FILENO);
-        close(STDERR_FILENO);
+        int null_fd = open("/dev/null", O_WRONLY);
+        if (null_fd == -1) exit(1);
+        if (dup2(null_fd, STDOUT_FILENO) == -1) exit(1);
+        if (dup2(null_fd, STDERR_FILENO) == -1) exit(1);
+        close(null_fd);
+
         if (execvp("git", args) == -1) exit(errno == ENOENT ? NO_GIT_BINARY : 1);
     }
 
     int exit_code;
     if (waitpid(pid, &exit_code, 0) == -1) ERROR("Couldn't wait for child process: %s.\n", strerror(errno));
     if (WEXITSTATUS(exit_code) == NO_GIT_BINARY) ERROR("Couldn't find git binary. Make sure it is in PATH.\n");
-    return exit_code;
+
+    return WEXITSTATUS(exit_code);
 }
 
 char *pipe_read(int fd) {
@@ -112,9 +118,12 @@ int gexecw(char *const *args, const char *buffer) {
     if (pid == 0) {
         if (close(write_fd) == -1) exit(1);
 
+        int null_fd = open("/dev/null", O_WRONLY);
+        if (null_fd == -1) exit(1);
         if (dup2(read_fd, STDIN_FILENO) == -1) exit(1);
-        close(STDOUT_FILENO);
-        close(STDERR_FILENO);
+        if (dup2(null_fd, STDOUT_FILENO) == -1) exit(1);
+        if (dup2(null_fd, STDERR_FILENO) == -1) exit(1);
+        close(null_fd);
 
         if (execvp("git", args) == -1) exit(1);
     }
