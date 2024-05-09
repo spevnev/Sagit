@@ -1,5 +1,4 @@
 #define _DEFAULT_SOURCE
-
 #include "event.h"
 #include <dirent.h>
 #include <errno.h>
@@ -18,6 +17,7 @@
 #include <sys/inotify.h>
 
 #define NEW_FOLDER (IN_CREATE | IN_ISDIR)
+#define EVENT_MASK (IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_MOVED_FROM)
 
 #else
 
@@ -25,6 +25,7 @@
 #include <sys/event.h>
 
 #define NEW_FOLDER (NOTE_WRITE | NOTE_LINK)
+#define EVENT_MASK (NOTE_DELETE | NOTE_WRITE | NOTE_EXTEND | NOTE_RENAME)
 
 static int_vec kqueue_fds = {0};
 static int git_index_fd = -1;
@@ -39,21 +40,20 @@ static int events_fd = -1;
 static bool ignore_event = false;
 
 static void watch_git_index(void) {
-    static const char *path = ".git/index";
-
-    int status;
 #ifdef __linux__
-    status = inotify_add_watch(events_fd, path, IN_MODIFY | IN_DELETE);
+    static const char *path = ".git";
+
+    if (inotify_add_watch(events_fd, path, EVENT_MASK) == -1) ERROR("Unable to watch \"%s\": %s.\n", path, strerror(errno));
 #else
-    static struct kevent event;
+    static const char *path = ".git/index";
 
     if (git_index_fd != -1) close(git_index_fd);
     git_index_fd = open(path, O_RDONLY);
 
+    static struct kevent event;
     EV_SET(&event, git_index_fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, NOTE_DELETE | NOTE_WRITE | NOTE_EXTEND, 0, 0);
-    status = kevent(events_fd, &event, 1, NULL, 0, NULL);
+    if (kevent(events_fd, &event, 1, NULL, 0, NULL) == -1) ERROR("Unable to watch \"%s\": %s.\n", path, strerror(errno));
 #endif
-    if (status == -1) ERROR("Unable to watch \"%s\": %s.\n", path, strerror(errno));
 }
 
 // Recursively adds directories to inotify(Linux) or kqueue(BSD/MacOS).
@@ -64,11 +64,11 @@ static void watch_dir(char *path) {
 
     int status;
 #ifdef __linux__
-    status = inotify_add_watch(events_fd, path, IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_MOVED_TO);
+    status = inotify_add_watch(events_fd, path, EVENT_MASK);
 #else
     static struct kevent event;
     int fd = open(path, O_RDONLY | O_DIRECTORY);
-    EV_SET(&event, fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, NOTE_DELETE | NOTE_WRITE | NOTE_EXTEND | NOTE_LINK | NOTE_RENAME, 0, 0);
+    EV_SET(&event, fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, EVENT_MASK, 0, 0);
     status = kevent(events_fd, &event, 1, NULL, 0, NULL);
     VECTOR_PUSH(&kqueue_fds, fd);
 #endif
@@ -82,11 +82,11 @@ static void watch_dir(char *path) {
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 || strcmp(entry->d_name, ".git") == 0) continue;
-
 #ifdef __linux__
         if (entry->d_type != DT_DIR) continue;
 #endif
+
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 || strcmp(entry->d_name, ".git") == 0) continue;
 
         size_t dir_len = strlen(entry->d_name);
         ASSERT(path_len + dir_len + 1 <= MAX_PATH_LENGTH);
@@ -146,59 +146,60 @@ void poll_cleanup(void) {
 }
 
 bool poll_events(State *state) {
-    int events = poll(poll_fds, sizeof(poll_fds) / sizeof(poll_fds[0]), -1);
-    if (events == -1) {
+    if (poll(poll_fds, sizeof(poll_fds) / sizeof(poll_fds[0]), -1) == -1) {
         if (errno == EINTR) return false;
         ERROR("Unable to poll: %s.\n", strerror(errno));
     }
 
-    if (poll_fds[1].revents & POLLIN) {
-        bool reindex = false;
+    if ((poll_fds[1].revents & POLLIN) == 0) return true;
+
+    bool reindex = false;
 
 #ifdef __linux__
-        static char event_buffer[1024];
+    static char event_buffer[1024];
 
-        ssize_t bytes;
-        while ((bytes = read(events_fd, event_buffer, sizeof(event_buffer))) > 0) {
-            if (reindex) continue;
+    ssize_t bytes;
+    while ((bytes = read(events_fd, event_buffer, sizeof(event_buffer))) > 0) {
+        if (reindex) continue;
 
-            struct inotify_event *event = (struct inotify_event *) event_buffer;
-            for (int i = events; i >= 0; i--) {
-                if ((event->mask & NEW_FOLDER) == NEW_FOLDER) {
-                    reindex = true;
-                    break;
-                }
-                event++;
+        char *ptr = event_buffer;
+        for (int i = 0; i < bytes; i += sizeof(struct inotify_event)) {
+            struct inotify_event *event = (struct inotify_event *) (ptr + i);
+            i += event->len;
+
+            if ((event->mask & NEW_FOLDER) == NEW_FOLDER) {
+                reindex = true;
+                break;
             }
         }
-        if (bytes == -1 && errno != EAGAIN) ERROR("Unable to read inotify event.\n");
+    }
+    if (bytes == -1 && errno != EAGAIN) ERROR("Unable to read inotify event.\n");
 #else
-        static struct kevent event;
-        static struct timespec time = {0};
+    static struct kevent event;
+    static struct timespec time = {0};
 
-        int events;
-        while ((events = kevent(events_fd, NULL, 0, &event, 1, &time)) > 0) {
-            if ((event.fflags & NEW_FOLDER) == NEW_FOLDER) reindex = true;
-            if ((int) event.ident == git_index_fd && event.fflags == NOTE_DELETE) watch_git_index();
-        }
-        if (events == -1) ERROR("Unable to read kevent: %s.\n", strerror(errno));
+    int events;
+    while ((events = kevent(events_fd, NULL, 0, &event, 1, &time)) > 0) {
+        if ((event.fflags & NEW_FOLDER) == NEW_FOLDER) reindex = true;
+        if ((int) event.ident == git_index_fd && event.fflags == NOTE_DELETE) watch_git_index();
+    }
+    if (events == -1) ERROR("Unable to read kevent: %s.\n", strerror(errno));
 #endif
 
-        if (reindex) watch_dirs();
+    if (reindex) watch_dirs();
 
-        if (ignore_event) {
-            ignore_event = false;
-        } else {
-            // if a key is pressed during external update, ignore that key
-            if (poll_fds[0].revents & POLLIN) {
-                while (getch() != ERR) continue;
-            }
-
-            update_git_state(state);
-            render(state);
-
-            return false;
+    if (ignore_event) {
+        ignore_event = false;
+    } else {
+        // if a key is pressed during external update, ignore that key
+        if (poll_fds[0].revents & POLLIN) {
+            while (getch() != ERR) continue;
         }
+
+        update_git_state(state);
+        render(state);
+
+        return false;
     }
 
     return true;
