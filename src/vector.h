@@ -24,6 +24,7 @@
         free((vec)->data);   \
         (vec)->length = 0;   \
         (vec)->capacity = 0; \
+        (vec)->data = NULL;  \
     } while (0);
 
 #define VECTOR_PUSH(vec, element)                                                       \
@@ -39,12 +40,6 @@
             if ((vec)->data == NULL) OUT_OF_MEMORY();                                   \
         }                                                                               \
         (vec)->data[(vec)->length++] = (element);                                       \
-    } while (0)
-
-#define VECTOR_POP(vec)            \
-    do {                           \
-        ASSERT((vec)->length > 0); \
-        (vec)->length--;           \
     } while (0)
 
 VECTOR_TYPEDEF(str_vec, char *);

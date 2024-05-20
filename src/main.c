@@ -78,6 +78,17 @@ static void handle_help(void) {
     }
 }
 
+static void scroll_up_to(int y, int *scroll, int *cursor) {
+    if (y > *scroll + SCROLL_PADDING) {
+        *cursor = y - *scroll;
+    } else if (y < *cursor) {
+        *scroll = 0;
+        *cursor = y;
+    } else {
+        *scroll = y - *cursor;
+    }
+}
+
 static void handle_main(void) {
     static int scroll = 0, cursor = 0, selection = -1;
 
@@ -154,11 +165,7 @@ static void handle_main(void) {
                 if (hunk_y == -1) break;
 
                 selection = -1;
-                if (hunk_y > scroll + SCROLL_PADDING) cursor = hunk_y - scroll;
-                else if (hunk_y < cursor) {
-                    scroll = 0;
-                    cursor = hunk_y;
-                } else scroll = hunk_y - cursor;
+                scroll_up_to(hunk_y, &scroll, &cursor);
             } break;
             default:
                 if (y < get_lines_length()) {
@@ -166,6 +173,7 @@ static void handle_main(void) {
                     if (result & AC_UPDATE_STATE) {
                         poll_ignore_event();
                         update_git_state(&state);
+                        if (cursor != selection_start && selection_start != -1) scroll_up_to(selection_start, &scroll, &cursor);
                         render(&state);
                     }
                     if (result & AC_RERENDER) render(&state);
