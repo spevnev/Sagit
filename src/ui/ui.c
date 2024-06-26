@@ -125,16 +125,20 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
                 if (hunk->is_folded) continue;
             }
 
+            LineStyle prev_style = LS_LINE;
             int hunk_y = lines.length;
             for (size_t j = 0; j < hunk->lines.length; j++) {
+                const char *line = hunk->lines.data[j];
+
                 // Hide empty last line
-                if (j == hunk->lines.length - 1 && strlen(hunk->lines.data[j]) == 1) break;
+                if (j == hunk->lines.length - 1 && strlen(line) == 1) break;
 
-                char ch = hunk->lines.data[j][0];
-
+                char ch = line[0];
                 LineStyle style = LS_LINE;
                 if (ch == '+') style = LS_ADD_LINE;
-                if (ch == '-') style = LS_DEL_LINE;
+                else if (ch == '-') style = LS_DEL_LINE;
+                else if (ch == NO_NEWLINE[0] && strcmp(line, NO_NEWLINE) == 0) style = prev_style;
+                prev_style = style;
 
                 LineArgs *args = (LineArgs *) ctxt_alloc(&ctxt, sizeof(LineArgs));
                 args->file = file;
@@ -142,7 +146,7 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
                 args->hunk_y = hunk_y;
                 args->line = j;
 
-                ADD_LINE(line_action, args, style, true, "%s", hunk->lines.data[j]);
+                ADD_LINE(line_action, args, style, true, "%s", line);
             }
         }
     }

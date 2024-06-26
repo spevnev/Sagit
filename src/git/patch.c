@@ -10,8 +10,6 @@
 #include "git/state.h"
 #include "vector.h"
 
-static const char *NO_NEWLINE = "\\ No newline at end of file";
-
 static const char *file_header_fmt = "diff --git a/%s b/%s\n--- a/%s\n+++ b/%s\n";
 static const char *new_file_header_fmt = "diff --git a/%s b/%s\nnew file mode %o\n--- /dev/null\n+++ b/%s\n";
 static const char *hunk_header_fmt = "@@ -%d,%d +%d,%d @@\n";
