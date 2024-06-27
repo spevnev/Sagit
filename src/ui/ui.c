@@ -119,7 +119,7 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
             args->file = file;
             args->hunk = hunk;
             if (file->change_type != FC_CREATED) {
-                // Created files always have one hunk, so there is no need to render it
+                // Created files always have only one hunk, so there is no need to render it
                 VECTOR_PUSH(&hunk_indexes, lines.length);
                 ADD_LINE(hunk_action, args, LS_HUNK, false, "%s%s", FOLD_CHAR(hunk->is_folded), hunk->header);
                 if (hunk->is_folded) continue;
@@ -149,6 +149,7 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
                 ADD_LINE(line_action, args, style, true, "%s", line);
             }
         }
+        if (!file->hunks.data[file->hunks.length - 1].is_folded) VECTOR_PUSH(&hunk_indexes, lines.length - 1);
     }
 
     VECTOR_FREE(&sorted_indexes);
