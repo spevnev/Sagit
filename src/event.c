@@ -49,6 +49,10 @@ static void watch_git_index(void) {
 
     if (git_index_fd != -1) close(git_index_fd);
     git_index_fd = open(path, O_RDONLY);
+    if (git_index_fd == -1) {
+        if (errno == ENOENT) ERROR("Unable to open \".git/index\". Make sure you are in the root directory of the git repository.\n");
+        else ERROR("Unable to open \"%s\": %s.\n", path, strerror(errno));
+    }
 
     static struct kevent event;
     EV_SET(&event, git_index_fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, NOTE_DELETE | NOTE_WRITE | NOTE_EXTEND, 0, 0);
@@ -68,6 +72,7 @@ static void watch_dir(char *path) {
 #else
     static struct kevent event;
     int fd = open(path, O_RDONLY | O_DIRECTORY);
+    if (fd == -1) ERROR("Unable to open directory \"%s\": %s.\n", path, strerror(errno));
     EV_SET(&event, fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, EVENT_MASK, 0, 0);
     status = kevent(events_fd, &event, 1, NULL, 0, NULL);
     VECTOR_PUSH(&kqueue_fds, fd);
@@ -100,6 +105,7 @@ static void watch_dir(char *path) {
             watch_dir(path);
         } else if (entry->d_type == DT_REG || entry->d_type == DT_LNK) {
             int fd = open(path, O_RDONLY);
+            if (fd == -1) ERROR("Unable to open file \"%s\": %s.\n", path, strerror(errno));
             EV_SET(&event, fd, EVFILT_VNODE, EV_ADD | EV_CLEAR, NOTE_WRITE | NOTE_EXTEND, 0, 0);
             if (kevent(events_fd, &event, 1, NULL, 0, NULL) == -1) ERROR("Unable to add file \"%s\" to kqueue: %s.\n", path, strerror(errno));
             VECTOR_PUSH(&kqueue_fds, fd);
