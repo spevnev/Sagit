@@ -52,7 +52,8 @@ static FileVec parse_diff(char *diff) {
     size_t i = 0;
     while (i < lines.length) {
         int src_begin, src_end, dst_begin, dst_end;
-        if (sscanf(lines.data[i], diff_header_size_fmt, &src_begin, &src_end, &dst_begin, &dst_end) != 0) ERROR("Unable to parse file diff header.\n");
+        if (sscanf(lines.data[i], diff_header_size_fmt, &src_begin, &src_end, &dst_begin, &dst_end) != 0)
+            ERROR("Unable to parse file diff header.\n");
 
         File file = {0};
         file.is_folded = true;
@@ -216,6 +217,14 @@ static void merge_files(const FileVec *old_files, FileVec *new_files) {
             break;
         }
     }
+}
+
+char *get_git_root_path(void) {
+    char *output = gexecr(CMD("git", "rev-parse", "--show-toplevel"));
+    ASSERT(output != NULL);
+    size_t len = strlen(output);
+    if (output[len - 1] == '\n') output[len - 1] = '\0';
+    return output;
 }
 
 bool is_git_initialized(void) { return gexec(CMD("git", "status")) == 0; }

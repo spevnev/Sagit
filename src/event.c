@@ -20,16 +20,9 @@ static bool ignore_event = false;
 
 #include <sys/inotify.h>
 
-#define EVENT_MASK (IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVED_TO | IN_MOVED_FROM)
+#define EVENT_MASK (IN_MODIFY | IN_CREATE | IN_DELETE | IN_MOVE | IN_DELETE_SELF | IN_MOVE_SELF)
 
 #define MAX_PATH_LENGTH 4096
-
-static char path_buffer[MAX_PATH_LENGTH];
-
-static void watch_git_index(void) {
-    static const char *path = ".git";
-    if (inotify_add_watch(events_fd, path, EVENT_MASK) == -1) ERROR("Unable to watch \"%s\": %s.\n", path, strerror(errno));
-}
 
 // Recursively adds directories to inotify
 // NOTE: modifies path, which must fit longest possible path.
@@ -63,10 +56,9 @@ static void watch_dir(char *path) {
 }
 
 static void watch_dirs(void) {
-    path_buffer[0] = '.';
-    path_buffer[1] = '\0';
+    char path_buffer[MAX_PATH_LENGTH] = ".";
     watch_dir(path_buffer);
-    watch_git_index();
+    if (inotify_add_watch(events_fd, ".git", EVENT_MASK) == -1) ERROR("Unable to watch \".git\": %s.\n", strerror(errno));
 }
 
 #else
@@ -128,6 +120,10 @@ static void macos_watch_thread(void) {
 #endif
 
 void poll_init(void) {
+    char *root_path = get_git_root_path();
+    if (chdir(root_path) == -1) ERROR("Unable to cd into \"%s\": %s.\n", root_path, strerror(errno));
+    free(root_path);
+
 #ifdef __linux__
     events_fd = inotify_init1(IN_NONBLOCK);
     if (events_fd == -1) ERROR("Unable to initialize inotify: %s.\n", strerror(errno));
@@ -186,9 +182,8 @@ bool poll_events(State *state) {
     while ((bytes = read(events_fd, event_buffer, sizeof(event_buffer))) > 0) {
         if (reindex) continue;
 
-        char *ptr = event_buffer;
-        for (int i = 0; i < bytes; i += sizeof(struct inotify_event)) {
-            struct inotify_event *event = (struct inotify_event *) (ptr + i);
+        for (ssize_t i = 0; i < bytes; i += sizeof(struct inotify_event)) {
+            struct inotify_event *event = (struct inotify_event *) (event_buffer + i);
             i += event->len;
 
             if ((event->mask & IN_CREATE) == IN_CREATE) {
