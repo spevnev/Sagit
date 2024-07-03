@@ -101,14 +101,22 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
 
         if (file->is_folded) continue;
 
+        if (file->old_mode != NULL && file->new_mode != NULL) {
+            ASSERT(strcmp(file->old_mode, file->new_mode) != 0);
+            ADD_LINE(NULL, NULL, LS_LINE, false, "<mode changed from %s to %s>", file->old_mode, file->new_mode);
+        }
+
         if (file->is_binary) {
             ADD_LINE(NULL, NULL, LS_LINE, false, "<binary file>");
             continue;
         }
 
         if (file->hunks.length == 0) {
-            ASSERT(file->change_type == FC_CREATED);
-            ADD_LINE(NULL, NULL, LS_LINE, false, "<empty file>");
+            if (file->change_type == FC_CREATED) {
+                ADD_LINE(NULL, NULL, LS_LINE, false, "<empty file>");
+            } else {
+                ADD_LINE(NULL, NULL, LS_LINE, false, "<no changes>");
+            }
             continue;
         }
 
@@ -191,7 +199,8 @@ void render(State *state) {
 
     if (state->unstaged.files.length > 0) {
         ADD_LINE(&section_action, &state->unstaged, LS_SECTION, 0, "%sUnstaged changes:", FOLD_CHAR(state->unstaged.is_folded));
-        if (!state->unstaged.is_folded) render_files(&state->unstaged.files, &unstaged_file_action, &unstaged_hunk_action, &unstaged_line_action);
+        if (!state->unstaged.is_folded)
+            render_files(&state->unstaged.files, &unstaged_file_action, &unstaged_hunk_action, &unstaged_line_action);
         EMPTY_LINE();
     }
 

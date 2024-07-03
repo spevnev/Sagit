@@ -3,7 +3,7 @@
 
 #include <ncurses.h>
 
-extern bool running;
+extern volatile bool running;
 
 void setup_signal_handlers(void);
 

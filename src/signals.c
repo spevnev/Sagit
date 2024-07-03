@@ -11,7 +11,7 @@
 #include <sys/ioctl.h>
 #include "error.h"
 
-bool running = true;
+volatile bool running = true;
 
 static void stop_running(int signal) {
     ASSERT(signal == SIGINT);

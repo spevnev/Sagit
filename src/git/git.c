@@ -69,6 +69,8 @@ static FileVec parse_diff(char *diff) {
             if (strncmp(lines.data[i], "Binary files ", 13) == 0) file.is_binary = true;
             if (strncmp(lines.data[i], "new file mode", 13) == 0) file.change_type = FC_CREATED;
             if (strncmp(lines.data[i], "deleted file mode", 17) == 0) file.change_type = FC_DELETED;
+            if (strncmp(lines.data[i], "old mode", 8) == 0) file.old_mode = lines.data[i] + 9;
+            if (strncmp(lines.data[i], "new mode", 8) == 0) file.new_mode = lines.data[i] + 9;
             if (strncmp(lines.data[i], "--- ", 4) == 0) {
                 if (file.change_type == FC_CREATED) ASSERT(strcmp(lines.data[i] + 4, "/dev/null") == 0);
                 else ASSERT(strcmp(lines.data[i] + 6, file.src) == 0);
@@ -119,7 +121,7 @@ static bool create_file_from_untracked(File *file, MemoryContext *ctxt, const ch
     dst_path[length] = '\0';
 
     if (size == 0) {
-        *file = (File){true, false, FC_CREATED, dst_path, dst_path, hunks};
+        *file = (File){true, false, FC_CREATED, dst_path, dst_path, NULL, NULL, hunks};
         return true;
     }
 
@@ -171,7 +173,7 @@ static bool create_file_from_untracked(File *file, MemoryContext *ctxt, const ch
     int exit_code = gexec(CMD("git", "grep", "-I", "--name-only", "--untracked", "-e", ".", "--", dst_path));
     bool is_binary = exit_code != 0;
 
-    *file = (File){true, is_binary, FC_CREATED, dst_path, dst_path, hunks};
+    *file = (File){true, is_binary, FC_CREATED, dst_path, dst_path, NULL, NULL, hunks};
     return true;
 }
 

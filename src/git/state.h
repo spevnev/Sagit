@@ -21,6 +21,8 @@ typedef struct {
     FileChange change_type;
     const char *src;
     const char *dst;
+    const char *old_mode;
+    const char *new_mode;
     HunkVec hunks;
 } File;
 
