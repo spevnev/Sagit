@@ -70,7 +70,7 @@ static void watch_dirs(void) {
 
 static pid_t watch_thread_pid = -1;
 static int event_write_fd = -1;
-static FSEventStreamRef stream;
+static FSEventStreamRef stream = NULL;
 
 static void fs_event_handler(ConstFSEventStreamRef stream, void *clientInfo, size_t numEvents, void *paths,
                              const FSEventStreamEventFlags flags[], const FSEventStreamEventId ids[]) {
@@ -87,10 +87,10 @@ static void fs_event_handler(ConstFSEventStreamRef stream, void *clientInfo, siz
     if (write(event_write_fd, &event, 1) != 1) ERROR("Unable to write: %s.\n", strerror(errno));
 }
 
-static void sigterm_handler(int signal) {
-    ASSERT(signal == SIGTERM);
+static void signal_handler(int signal) {
     (void) signal;
 
+    ASSERT(stream != NULL);
     FSEventStreamStop(stream);
     FSEventStreamSetDispatchQueue(stream, NULL);
     FSEventStreamInvalidate(stream);
@@ -111,8 +111,9 @@ static void macos_watch_thread(void) {
     FSEventStreamStart(stream);
 
     struct sigaction action = {0};
-    action.sa_handler = &sigterm_handler;
-    sigaction(SIGTERM, &action, NULL);
+    action.sa_handler = &signal_handler;
+    action.sa_flags = SA_RESETHAND;
+    sigaction(SIGINT, &action, NULL);
 
     dispatch_main();
 }
@@ -157,7 +158,7 @@ void poll_init(void) {
 void poll_cleanup(void) {
 #ifndef __linux__
     if (watch_thread_pid != -1) {
-        kill(watch_thread_pid, SIGTERM);
+        kill(watch_thread_pid, SIGINT);
         waitpid(watch_thread_pid, NULL, 0);
     }
 #endif
