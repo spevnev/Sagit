@@ -3,7 +3,11 @@ CC      := gcc
 CFLAGS  := -O2 -std=c17 -Wall -Wextra -pedantic -Isrc -MMD -MP
 LDFLAGS := $(shell pkg-config --libs ncursesw)
 
-ifeq ($(DEBUG),1)
+ifeq ($(shell uname -s), Darwin)
+	LDFLAGS += -framework CoreServices
+endif
+
+ifeq ($(DEBUG), 1)
 	CFLAGS += -g3 -fstack-protector -fsanitize=address,leak,undefined -DDEBUG
 endif
 
