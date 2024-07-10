@@ -17,8 +17,8 @@
         close(fd);                                                            \
     } while (0);
 
-char *create_patch_from_hunk(const File *file, const Hunk *hunk);
+char *create_patch_from_hunk(const File *file, const Hunk *hunk, bool unstage);
 // Returns NULL in case patch doesn't contain any changes or doesn't need to be applied
-char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, bool reverse);
+char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, bool unstage);
 
 #endif  //  PATCH

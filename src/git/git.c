@@ -306,7 +306,7 @@ void git_unstage_file(const char *file_path) {
 void git_stage_hunk(const File *file, const Hunk *hunk) {
     ASSERT(file != NULL && hunk != NULL);
 
-    char *patch = create_patch_from_hunk(file, hunk);
+    char *patch = create_patch_from_hunk(file, hunk, false);
     if (gexecw(CMD_APPLY, patch) != 0) {
         DUMP_PATCH(patch);
         ERROR("Unable to stage the hunk. Failed patch written to \"%s\".\n", FAILED_PATCH_PATH);
@@ -317,7 +317,7 @@ void git_stage_hunk(const File *file, const Hunk *hunk) {
 void git_unstage_hunk(const File *file, const Hunk *hunk) {
     ASSERT(file != NULL && hunk != NULL);
 
-    char *patch = create_patch_from_hunk(file, hunk);
+    char *patch = create_patch_from_hunk(file, hunk, true);
     if (gexecw(CMD_APPLY_REVERSE, patch) != 0) {
         DUMP_PATCH(patch);
         ERROR("Unable to unstage the hunk. Failed patch written to \"%s\".\n", FAILED_PATCH_PATH);

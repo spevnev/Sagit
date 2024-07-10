@@ -44,7 +44,7 @@ static HunkHeader parse_hunk_header(const char *raw) {
     return header;
 }
 
-char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
+char *create_patch_from_hunk(const File *file, const Hunk *hunk, bool unstage) {
     ASSERT(file != NULL && hunk != NULL);
 
     HunkHeader header = parse_hunk_header(hunk->header);
@@ -52,13 +52,16 @@ char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
     size_t hunk_length = 0;
     for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
 
-    size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->src, file->dst, file->src, file->dst);
+    const char *src = file->src;
+    if (unstage && file->change_type == FC_RENAMED) src = file->dst;
+
+    size_t file_header_size = snprintf(NULL, 0, file_header_fmt, src, file->dst, src, file->dst);
     size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
     char *patch = (char *) malloc(file_header_size + hunk_header_size + hunk_length + 1);
     if (patch == NULL) OUT_OF_MEMORY();
 
     char *ptr = patch;
-    ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->src, file->dst, file->src, file->dst);
+    ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, src, file->dst, src, file->dst);
     ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
 
     for (size_t i = 0; i < hunk->lines.length; i++) {
@@ -72,7 +75,7 @@ char *create_patch_from_hunk(const File *file, const Hunk *hunk) {
     return patch;
 }
 
-char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, bool reverse) {
+char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, bool unstage) {
     ASSERT(file != NULL && hunk != NULL);
     ASSERT(hunk->lines.length >= 1);
 
@@ -92,11 +95,11 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
         if (i < range_start || i > range_end) {
             if (line[0] == '+' || line[0] == '-') has_unstaged_changes = true;
 
-            if (!reverse && line[0] == '+') {
+            if (!unstage && line[0] == '+') {
                 // skip to prevent it from being applied
                 header.new_length--;
                 continue;
-            } else if (reverse && line[0] == '-') {
+            } else if (unstage && line[0] == '-') {
                 // skip because it has already been applied
                 header.old_length--;
                 continue;
@@ -106,11 +109,11 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
         size_t len = strlen(line);
         memcpy(ptr, line, len);
         if (i < range_start || i > range_end) {
-            if (!reverse && line[0] == '-') {
+            if (!unstage && line[0] == '-') {
                 // prevent it from being applied
                 *ptr = ' ';
                 header.new_length++;
-            } else if (reverse && line[0] == '+') {
+            } else if (unstage && line[0] == '+') {
                 // "apply", because it has already been applied
                 *ptr = ' ';
                 header.old_length++;
@@ -122,7 +125,7 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
     }
     *ptr = '\0';
 
-    if (!reverse) {
+    if (!unstage) {
         // Handle partial staging of files/hunks with "\ No newline at end of file"
         if (strcmp(hunk->lines.data[hunk->lines.length - 1], NO_NEWLINE) == 0 && has_unstaged_changes) {
             ASSERT(hunk->lines.length >= 2);
@@ -131,7 +134,7 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
         }
     }
 
-    if ((!reverse && header.new_length == 0) || (reverse && header.old_length == 0)) {
+    if ((!unstage && header.new_length == 0) || (unstage && header.old_length == 0)) {
         // This patch will leave file empty, so we should unstage it
         git_unstage_file(file->dst);
         free(patch_body);
@@ -146,21 +149,16 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
     char *patch;
     size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
 
-    if (file->change_type != FC_CREATED) {
-        size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->src, file->dst, file->src, file->dst);
-        patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
-        if (patch == NULL) OUT_OF_MEMORY();
-
-        ptr = patch;
-        ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->src, file->dst, file->src, file->dst);
-    } else if (reverse) {  // Partial unstaging of untracked file requires src == dst
+    if (unstage && (file->change_type == FC_CREATED || file->change_type == FC_RENAMED)) {
+        // Unstaging of a created or renamed file requires src == dst
         size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->dst, file->dst, file->dst, file->dst);
         patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
         if (patch == NULL) OUT_OF_MEMORY();
 
         ptr = patch;
         ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->dst, file->dst, file->dst, file->dst);
-    } else {  // Partial staging of untracked file requires "new file mode"
+    } else if (!unstage && file->change_type == FC_CREATED) {
+        // Staging of a created file requires "new file mode"
         struct stat file_info = {0};
         if (stat(file->dst, &file_info) == -1) ERROR("Unable to stat \"%s\": %s.\n", file->dst, strerror(errno));
 
@@ -170,6 +168,13 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
 
         ptr = patch;
         ptr += snprintf(ptr, file_header_size + 1, new_file_header_fmt, file->dst, file->dst, file_info.st_mode, file->dst);
+    } else {
+        size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->src, file->dst, file->src, file->dst);
+        patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
+        if (patch == NULL) OUT_OF_MEMORY();
+
+        ptr = patch;
+        ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->src, file->dst, file->src, file->dst);
     }
 
     ptr += snprintf(ptr, hunk_header_size + 1, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
