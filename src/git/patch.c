@@ -44,7 +44,7 @@ static HunkHeader parse_hunk_header(const char *raw) {
     return header;
 }
 
-char *create_patch_from_hunk(const File *file, const Hunk *hunk, bool unstage) {
+char *create_patch_from_hunk(const File *file, const Hunk *hunk, bool stage) {
     ASSERT(file != NULL && hunk != NULL);
 
     HunkHeader header = parse_hunk_header(hunk->header);
@@ -53,7 +53,7 @@ char *create_patch_from_hunk(const File *file, const Hunk *hunk, bool unstage) {
     for (size_t i = 0; i < hunk->lines.length; i++) hunk_length += strlen(hunk->lines.data[i]) + 1;
 
     const char *src = file->src;
-    if (unstage && file->change_type == FC_RENAMED) src = file->dst;
+    if (!stage && file->change_type == FC_RENAMED) src = file->dst;
 
     size_t file_header_size = snprintf(NULL, 0, file_header_fmt, src, file->dst, src, file->dst);
     size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
@@ -75,7 +75,7 @@ char *create_patch_from_hunk(const File *file, const Hunk *hunk, bool unstage) {
     return patch;
 }
 
-char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, bool unstage) {
+char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_start, size_t range_end, bool stage) {
     ASSERT(file != NULL && hunk != NULL);
     ASSERT(hunk->lines.length >= 1);
 
@@ -91,41 +91,45 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
     char *ptr = patch_body;
     for (size_t i = 0; i < hunk->lines.length; i++) {
         const char *line = hunk->lines.data[i];
+        bool overwrite_change = false;
 
-        if (i < range_start || i > range_end) {
+        if (range_start <= i && i <= range_end) {
+            if (line[0] == '-' || line[0] == '+') has_changes = true;
+        } else {
             if (line[0] == '+' || line[0] == '-') has_unstaged_changes = true;
 
-            if (!unstage && line[0] == '+') {
-                // skip to prevent it from being applied
-                header.new_length--;
-                continue;
-            } else if (unstage && line[0] == '-') {
-                // skip because it has already been applied
-                header.old_length--;
-                continue;
+            if (stage) {
+                if (line[0] == '-') {
+                    // prevent it from being applied
+                    overwrite_change = true;
+                    header.new_length++;
+                } else if (line[0] == '+') {
+                    // skip to prevent it from being applied
+                    header.new_length--;
+                    continue;
+                }
+            } else {
+                if (line[0] == '-') {
+                    // skip because it has already been applied
+                    header.old_length--;
+                    continue;
+                } else if (line[0] == '+') {
+                    // "apply", because it has already been applied
+                    overwrite_change = true;
+                    header.old_length++;
+                }
             }
         }
 
         size_t len = strlen(line);
         memcpy(ptr, line, len);
-        if (i < range_start || i > range_end) {
-            if (!unstage && line[0] == '-') {
-                // prevent it from being applied
-                *ptr = ' ';
-                header.new_length++;
-            } else if (unstage && line[0] == '+') {
-                // "apply", because it has already been applied
-                *ptr = ' ';
-                header.old_length++;
-            }
-        } else if (line[0] == '-' || line[0] == '+') has_changes = true;
-
+        if (overwrite_change) *ptr = ' ';
         ptr += len;
         *ptr++ = '\n';
     }
     *ptr = '\0';
 
-    if (!unstage) {
+    if (stage) {
         // Handle partial staging of files/hunks with "\ No newline at end of file"
         if (strcmp(hunk->lines.data[hunk->lines.length - 1], NO_NEWLINE) == 0 && has_unstaged_changes) {
             ASSERT(hunk->lines.length >= 2);
@@ -134,7 +138,7 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
         }
     }
 
-    if ((!unstage && header.new_length == 0) || (unstage && header.old_length == 0)) {
+    if ((stage && header.new_length == 0) || (!stage && header.old_length == 0)) {
         // This patch will leave file empty, so we should unstage it
         git_unstage_file(file->dst);
         free(patch_body);
@@ -149,7 +153,7 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
     char *patch;
     size_t hunk_header_size = snprintf(NULL, 0, hunk_header_fmt, header.start, header.old_length, header.start, header.new_length);
 
-    if (unstage && (file->change_type == FC_CREATED || file->change_type == FC_RENAMED)) {
+    if (!stage && (file->change_type == FC_CREATED || file->change_type == FC_RENAMED)) {
         // Unstaging of a created or renamed file requires src == dst
         size_t file_header_size = snprintf(NULL, 0, file_header_fmt, file->dst, file->dst, file->dst, file->dst);
         patch = (char *) malloc(file_header_size + hunk_header_size + patch_size);
@@ -157,7 +161,7 @@ char *create_patch_from_range(const File *file, const Hunk *hunk, size_t range_s
 
         ptr = patch;
         ptr += snprintf(ptr, file_header_size + 1, file_header_fmt, file->dst, file->dst, file->dst, file->dst);
-    } else if (!unstage && file->change_type == FC_CREATED) {
+    } else if (stage && file->change_type == FC_CREATED) {
         // Staging of a created file requires "new file mode"
         struct stat file_info = {0};
         if (stat(file->dst, &file_info) == -1) ERROR("Unable to stat \"%s\": %s.\n", file->dst, strerror(errno));

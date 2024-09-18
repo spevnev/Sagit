@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
         }
 
         if (is_state_empty(&state)) {
-            printw("There are no unstaged changes.\n");
+            printw("There are no uncommitted changes.\n");
             handle_info();
             continue;
         }

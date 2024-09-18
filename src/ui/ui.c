@@ -37,25 +37,7 @@ static int_vec hunk_indexes = {0};
         VECTOR_PUSH(&lines, line);                                         \
     } while (0)
 
-#define EMPTY_LINE()                                       \
-    do {                                                   \
-        char *str = (char *) ctxt_alloc(&ctxt, 2);         \
-        str[0] = ' '; /* makes it visible when selected */ \
-        str[1] = '\0';                                     \
-        Line line = {str, NULL, NULL, 0, 0};               \
-        VECTOR_PUSH(&lines, line);                         \
-    } while (0)
-
-#define APPEND_LINE(...)                                               \
-    do {                                                               \
-        ASSERT(lines.length > 0);                                      \
-        Line *line = &lines.data[lines.length - 1];                    \
-        size_t old_size = strlen(line->str);                           \
-        size_t add_size = snprintf(NULL, 0, __VA_ARGS__) + 1;          \
-        size_t new_size = old_size + add_size;                         \
-        line->str = (char *) ctxt_realloc(&ctxt, line->str, new_size); \
-        snprintf(line->str + old_size, add_size, __VA_ARGS__);         \
-    } while (0)
+static const Line EMPTY_LINE = {" ", NULL, NULL, 0, 0};
 
 static void init_styles(void) {
     ASSERT(sizeof(line_styles) / sizeof(line_styles[0]) == __LS_SIZE);
@@ -82,16 +64,15 @@ static void render_files(const FileVec *files, action_t *file_action, action_t *
             continue;
         }
 
-        ADD_LINE(file_action, file, LS_FILE, false, "%s", FOLD_CHAR(file->is_folded));
         switch (file->change_type) {
             case FC_MODIFIED:
-                APPEND_LINE("modified %s", file->src);
+                ADD_LINE(file_action, file, LS_FILE, false, "%smodified %s", FOLD_CHAR(file->is_folded), file->src);
                 break;
             case FC_CREATED:
-                APPEND_LINE("created  %s", file->dst);
+                ADD_LINE(file_action, file, LS_FILE, false, "%screated  %s", FOLD_CHAR(file->is_folded), file->dst);
                 break;
             case FC_RENAMED:
-                APPEND_LINE("renamed  %s -> %s", file->src, file->dst);
+                ADD_LINE(file_action, file, LS_FILE, false, "%srenamed  %s -> %s", FOLD_CHAR(file->is_folded), file->src, file->dst);
                 break;
             default:
                 UNREACHABLE();
@@ -201,13 +182,13 @@ void render(State *state) {
         ADD_LINE(&section_action, &state->unstaged, LS_SECTION, 0, "%sUnstaged changes:", FOLD_CHAR(state->unstaged.is_folded));
         if (!state->unstaged.is_folded)
             render_files(&state->unstaged.files, &unstaged_file_action, &unstaged_hunk_action, &unstaged_line_action);
-        EMPTY_LINE();
+        VECTOR_PUSH(&lines, EMPTY_LINE);
     }
 
     if (state->staged.files.length > 0) {
         ADD_LINE(&section_action, &state->staged, LS_SECTION, 0, "%sStaged changes:", FOLD_CHAR(state->staged.is_folded));
         if (!state->staged.is_folded) render_files(&state->staged.files, &staged_file_action, &staged_hunk_action, &staged_line_action);
-        EMPTY_LINE();
+        VECTOR_PUSH(&lines, EMPTY_LINE);
     }
 }
 
