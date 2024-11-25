@@ -23,7 +23,7 @@ static char *const CMD_APPLY_REVERSE[] = {"git", "apply", "--cached", "--reverse
 static char *const CMD_COUNT_COMMITS[] = {"git", "rev-list", "--count", "--all", NULL};
 // clang-format on
 
-static const char *diff_header_size_fmt = "diff --git a/%n%*s%n b/%n%*s%n";
+static const char *diff_header_fmt = "diff --git a/%n%*s%n b/%n%*s%n";
 
 // Lines are stored as pointers into the text, thus text must be free after lines.
 // It also modifies text by replacing delimiters with nulls.
@@ -51,8 +51,8 @@ static FileVec parse_diff(char *diff) {
     FileVec files = {0};
     size_t i = 0;
     while (i < lines.length) {
-        int src_begin, src_end, dst_begin, dst_end;
-        if (sscanf(lines.data[i], diff_header_size_fmt, &src_begin, &src_end, &dst_begin, &dst_end) != 0)
+        int src_begin = 0, src_end = 0, dst_begin = 0, dst_end = 0;
+        if (sscanf(lines.data[i], diff_header_fmt, &src_begin, &src_end, &dst_begin, &dst_end) != 0 || (src_begin == 0 && src_end == 0))
             ERROR("Unable to parse file diff header.\n");
 
         File file = {0};
