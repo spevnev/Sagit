@@ -11,19 +11,18 @@ ifeq ($(DEBUG), 1)
 	CFLAGS += -g3 -fstack-protector -fsanitize=address,leak,undefined -DDEBUG
 endif
 
-BIN_PATH ?= /usr/local/bin
-BIN_NAME := sagit
 
 SOURCE_DIR  := src
 BUILD_DIR   := build
 OBJECTS_DIR := $(BUILD_DIR)/$(SOURCE_DIR)
 
+BIN_PATH ?= /usr/local/bin
+BIN_NAME := sagit
+BINARY   := $(BUILD_DIR)/$(BIN_NAME)
+
 SOURCES := $(shell find $(SOURCE_DIR) -type f -name '*.c')
 OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(OBJECTS_DIR)/%.o, $(SOURCES))
-BINARY  := $(BUILD_DIR)/$(BIN_NAME)
-
-OBJECTS      := $(patsubst $(SOURCE_DIR)/%.c, $(OBJECTS_DIR)/%.o, $(SOURCES))
-DEPENDENCIES := $(patsubst %.o, %.d, $(OBJECTS))
+DEPS    := $(patsubst %.o, %.d, $(OBJECTS))
 
 .PHONY: all
 all: build
@@ -51,4 +50,4 @@ $(OBJECTS_DIR)/%.o: $(SOURCE_DIR)/%.c Makefile
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
--include $(DEPENDENCIES)
+-include $(DEPS)
